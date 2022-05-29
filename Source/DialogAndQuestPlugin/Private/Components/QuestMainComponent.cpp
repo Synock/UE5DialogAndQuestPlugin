@@ -4,25 +4,14 @@
 #include "Components/QuestMainComponent.h"
 
 #include "Interfaces/QuestBearerInterface.h"
-<<<<<<< HEAD
-=======
 #include "Interfaces/QuestGiverInterface.h"
 #include "Misc/DialogAndQuestPluginHelper.h"
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 
 
 // Sets default values for this component's properties
 UQuestMainComponent::UQuestMainComponent()
 {
-<<<<<<< HEAD
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
-=======
-	PrimaryComponentTick.bCanEverTick = false;
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -31,10 +20,6 @@ UQuestMainComponent::UQuestMainComponent()
 void UQuestMainComponent::BeginPlay()
 {
 	Super::BeginPlay();
-<<<<<<< HEAD
-
-	// ...
-=======
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -53,13 +38,10 @@ uint32 UQuestMainComponent::FindNextStepID(const FQuestMetaData& QuestData, int3
 	}
 
 	return 0;
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-=======
 const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep)
 {
 	for (size_t StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
@@ -73,7 +55,6 @@ const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestD
 	return QuestData.Steps[0];
 }
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UQuestMainComponent::AddQuest(const FQuestMetaData& QuestData)
 {
 	if (GetOwnerRole() != ROLE_Authority)
@@ -102,8 +83,6 @@ void UQuestMainComponent::ForceAddPlayerQuest(APlayerController* PlayerControlle
 		QuestBearerInterface->GetQuestBearerComponent()->AuthorityAddQuest(QuestID);
 	}
 }
-<<<<<<< HEAD
-=======
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -151,4 +130,3 @@ void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		UDialogAndQuestPluginHelper::Warning("Tried to validate an impossible quest state");
 	}
 }
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84

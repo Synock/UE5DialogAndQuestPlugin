@@ -2,11 +2,6 @@
 
 
 #include "Interfaces/DialogGameModeInterface.h"
-<<<<<<< HEAD
-
-
-// Add default functionality here for any IDialogGameModeInterface functions that are not pure virtual.
-=======
 #include "Misc/DialogAndQuestPluginHelper.h"
 
 
@@ -22,4 +17,3 @@ void IDialogGameModeInterface::TryProgressQuest(int64 QuestID, APlayerController
 
 	MasterQuestComponent->TryProgressQuest(QuestID, QuestBearer, Validator);
 }
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84

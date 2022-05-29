@@ -56,21 +56,15 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	}
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogWindow::DisplayJournalUpdate()
 {
 	TopicText->AddEmptyTopicData("<Italic>Your quest journal has been updated.</>");
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogWindow::DisplayDialogTopic(int64 ID)
 {
 	TopicText->AddTopicText(ID);
@@ -88,37 +82,26 @@ void UDialogWindow::DisplayDialogTopic(int64 ID)
 		{
 			if (Topic.QuestRelation.QuestID != 0)
 			{
-<<<<<<< HEAD
-				BearerInterface->GetQuestBearerComponent()->TryValidateQuestFromActor(
-					Topic.QuestRelation.QuestID, DialogActor);
-=======
 				for (auto& StepData : Topic.QuestRelation.Steps)
 				{
 					if (BearerInterface->CanValidate(Topic.QuestRelation.QuestID, StepData))
 						BearerInterface->TryProgressQuest(
 							Topic.QuestRelation.QuestID, DialogActor);
 				}
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 			}
 		}
 	}
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogWindow::DisplayDialogTopicFromString(const FString& ID)
 {
 	DisplayDialogTopic(DialogComponent->GetDialogTopicID(ID));
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogWindow::CloseWindow()
 {
 	IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer());

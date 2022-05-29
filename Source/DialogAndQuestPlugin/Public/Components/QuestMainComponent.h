@@ -25,15 +25,10 @@ protected:
 
 	TMap<int64, FQuestMetaData> QuestList;
 
-<<<<<<< HEAD
-public:
-
-=======
 	uint32 FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep);
 
 	const FQuestStep& FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep);
 public:
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void AddQuest(const FQuestMetaData& QuestData);
 
@@ -42,10 +37,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void ForceAddPlayerQuest(APlayerController* PlayerController, int64 QuestID);
-<<<<<<< HEAD
-=======
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 };

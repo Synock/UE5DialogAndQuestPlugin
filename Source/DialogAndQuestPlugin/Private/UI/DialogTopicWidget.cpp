@@ -10,14 +10,6 @@ void UDialogTopicWidget::InitDialog(UDialogWindow* InputParentDialog)
 	DialogComponent = InputParentDialog->GetDialogComponent();
 }
 
-<<<<<<< HEAD
-void UDialogTopicWidget::UpdateTopicData()
-{
-	ClearList();
-	for (auto& Topic : DialogComponent->GetAllDialogTopic())
-	{
-		if (Topic.TopicCondition.VerifyCondition(ParentDialog->GetDialogActor()))
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogTopicWidget::UpdateTopicData()
@@ -27,7 +19,6 @@ void UDialogTopicWidget::UpdateTopicData()
 	for (auto& Topic : DialogComponent->GetAllDialogTopic())
 	{
 		if (Topic.TopicCondition.VerifyCondition(ParentDialog->GetDialogActor(), GetOwningPlayer()))
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 		{
 			FDialogTextData TextData;
 			TextData.Id = Topic.Id;

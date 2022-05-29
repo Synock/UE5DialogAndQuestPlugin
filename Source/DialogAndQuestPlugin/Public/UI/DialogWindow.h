@@ -74,4 +74,3 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnExitEvent OnExit;
 };
-

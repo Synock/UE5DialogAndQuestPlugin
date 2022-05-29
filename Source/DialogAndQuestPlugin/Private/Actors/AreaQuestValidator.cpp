@@ -4,11 +4,8 @@
 #include "Actors/AreaQuestValidator.h"
 
 #include "Interfaces/QuestBearerInterface.h"
-<<<<<<< HEAD
-=======
 #include "Misc/DialogAndQuestPluginHelper.h"
 #include "Net/UnrealNetwork.h"
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 
 
 // Sets default values
@@ -18,24 +15,10 @@ AAreaQuestValidator::AAreaQuestValidator(): AActor()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-<<<<<<< HEAD
-	OnActorBeginOverlap.AddDynamic(this, &AAreaQuestValidator::OnOverlapBegin);
-	OnActorEndOverlap.AddDynamic(this, &AAreaQuestValidator::OnOverlapEnd);
-
-	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
-	BoxComponent->SetBoxExtent(FVector(200.f, 200.f, 200.f));
-	BoxComponent->bDynamicObstacle = true;
-	BoxComponent->SetupAttachment(GetRootComponent());
-	BoxComponent->SetGenerateOverlapEvents(true);
-
-=======
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 	if (HasAuthority())
 	{
 		QuestComponent = CreateDefaultSubobject<UQuestGiverComponent>("QuestComponent");
 		QuestComponent->SetIsReplicated(false); // Enable replication by default
-<<<<<<< HEAD
-=======
 
 		BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 		BoxComponent->SetBoxExtent(FVector(200.f, 200.f, 200.f));
@@ -47,7 +30,6 @@ AAreaQuestValidator::AAreaQuestValidator(): AActor()
 
 		OnActorBeginOverlap.AddDynamic(this, &AAreaQuestValidator::OnOverlapBegin);
 		OnActorEndOverlap.AddDynamic(this, &AAreaQuestValidator::OnOverlapEnd);
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 	}
 }
 
@@ -61,35 +43,6 @@ void AAreaQuestValidator::BeginPlay()
 
 void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
-<<<<<<< HEAD
-	if(!HasAuthority())
-		return;
-
-	if(OtherActor && OtherActor != this)
-	{
-		if(IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(OtherActor); QuestBearer != nullptr)
-		{
-			const auto & QuestData = QuestComponent->GetValidableQuestSteps();
-			for(const auto & QData : QuestData)
-			{
-				QuestBearer->GetQuestBearerComponent()->TryValidateQuestFromActor(QData.Key, OtherActor);
-			}
-		}
-	}
-}
-
-void AAreaQuestValidator::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
-{
-	if(!HasAuthority())
-		return;
-
-	if(OtherActor && OtherActor != this)
-	{
-
-	}
-}
-
-=======
 	UDialogAndQuestPluginHelper::Log(
 		"Overlap begin between " + OverlappedActor->GetName() + " and " + OtherActor->GetName());
 	APawn* ActorAsPawn = Cast<APawn>(OtherActor);
@@ -112,4 +65,3 @@ void AAreaQuestValidator::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherAct
 	UDialogAndQuestPluginHelper::Log(
 		"Overlap end between " + OverlappedActor->GetName() + " and " + OtherActor->GetName());
 }
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84

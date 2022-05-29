@@ -27,11 +27,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	UQuestJournalDetailsWidget* DetailsWidget = nullptr;
 
-<<<<<<< HEAD
-	UFUNCTION(BlueprintCallable)
-	void UpdateKnownQuest();
-
-=======
 	UPROPERTY(BlueprintReadWrite)
 	int64 CurrentQuestID = 0;
 
@@ -39,7 +34,6 @@ protected:
 	void UpdateKnownQuest();
 
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 public:
 	UFUNCTION(BlueprintCallable)
 	const UQuestBearerComponent* GetQuestComponent() const { return QuestComponent; }

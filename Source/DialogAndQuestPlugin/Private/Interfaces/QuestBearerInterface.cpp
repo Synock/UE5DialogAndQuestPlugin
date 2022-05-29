@@ -5,8 +5,6 @@
 
 
 // Add default functionality here for any IQuestBearerInterface functions that are not pure virtual.
-<<<<<<< HEAD
-=======
 void IQuestBearerInterface::TryProgressQuest(int64 QuestID, AActor* Validator)
 {
 	GetQuestBearerComponent()->TryProgressQuest(QuestID, Validator);
@@ -60,4 +58,3 @@ bool IQuestBearerInterface::CanDisplay(int64 QuestID, int32 StepID) const
 {
 	return GetQuestBearerComponentConst()->CanDisplay(QuestID, StepID);
 }
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84

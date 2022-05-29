@@ -32,14 +32,6 @@ protected:
 	void OnRep_KnownQuest();
 
 	UFUNCTION(Server, Reliable, WithValidation)
-<<<<<<< HEAD
-	void Server_UpdateQuest(int64 QuestID, int32 QuestStep, AActor* QuestGiver);
-
-	UFUNCTION(BlueprintCallable)
-	void UpdateQuest(int64 QuestID, int32 QuestStep, AActor* QuestGiver);
-
-public:
-=======
 	void Server_TryProgressQuest(int64 QuestID, AActor* Validator);
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -48,13 +40,10 @@ public:
 
 public:
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 	const TArray<FQuestProgressData>& GetAllKnownQuest() const { return KnownQuestData; }
 
 	const FQuestProgressData& GetKnownQuest(int64 QuestID) const;
 
-<<<<<<< HEAD
-=======
 	bool IsQuestKnown(int64 QuestID) const;
 
 	bool CanDisplay(int64 QuestID, int32 StepID) const;
@@ -67,17 +56,10 @@ public:
 	
 	bool IsAtStep(int64 QuestID, int32 StepID) const;
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 	UPROPERTY(BlueprintAssignable) //this is public because its a dispatcher
 	FKnownQuestChanged KnownQuestDispatcher;
 
 	UFUNCTION(BlueprintCallable)
-<<<<<<< HEAD
-	void TryValidateQuestFromActor(int64 QuestID, AActor* QuestGiver);
-
-	UFUNCTION(BlueprintCallable)
-	void AuthorityAddQuest(int64 QuestID);
-=======
 	void AuthorityAddQuest(int64 QuestID);
 
 	UFUNCTION(BlueprintCallable)
@@ -90,5 +72,4 @@ public:
 
 	void AddQuest(const FQuestMetaData& QuestMeta);
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 };

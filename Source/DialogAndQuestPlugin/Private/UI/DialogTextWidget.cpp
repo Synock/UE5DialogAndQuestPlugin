@@ -11,22 +11,16 @@ void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
 	AddTopicData(TextData);
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogTextWidget::InitDialog(UDialogWindow* InputParentDialog)
 {
 	ParentDialog = InputParentDialog;
 	DialogComponent = InputParentDialog->GetDialogComponent();
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void UDialogTextWidget::AddTopicText(int64 TopicID)
 {
 	const FDialogTopicStruct& Topic = DialogComponent->GetDialogTopic(TopicID);

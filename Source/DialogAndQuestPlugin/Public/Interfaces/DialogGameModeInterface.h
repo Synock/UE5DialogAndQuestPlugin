@@ -27,9 +27,6 @@ public:
 	virtual UDialogMainComponent* GetMainDialogComponent() = 0;
 
 	virtual UQuestMainComponent* GetMainQuestComponent() = 0;
-<<<<<<< HEAD
-=======
 
 	virtual void TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 };

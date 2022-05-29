@@ -6,11 +6,7 @@
 #include "UObject/Object.h"
 #include "QuestData.generated.h"
 
-<<<<<<< HEAD
-///represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
-=======
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 USTRUCT(BlueprintType)
 struct FQuestStep
 {
@@ -27,18 +23,12 @@ struct FQuestStep
 
 	UPROPERTY(BlueprintReadOnly)
 	FString StepDescription;
-<<<<<<< HEAD
-};
-
-/// This is a complete quest info
-=======
 
 	UPROPERTY(BlueprintReadOnly)
 	bool FinishingStep = false;
 };
 
 ///@brief Represent the complete quest info
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 USTRUCT(BlueprintType)
 struct FQuestMetaData
 {
@@ -55,20 +45,11 @@ struct FQuestMetaData
 
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FQuestStep> Steps;
-<<<<<<< HEAD
-
-};
-
-///This is a list of objectives that can be validated
-USTRUCT(BlueprintType)
-struct FQuestValidableSteps
-=======
 };
 
 ///@brief This is a list of objectives that can be validated by a quest giver
 USTRUCT(BlueprintType)
 struct FQuestValidatableSteps
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 {
 	GENERATED_BODY()
 
@@ -79,11 +60,7 @@ struct FQuestValidatableSteps
 	TArray<int32> Steps;
 };
 
-<<<<<<< HEAD
-///represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang and its completion state
-=======
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang and its completion state
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 USTRUCT(BlueprintType)
 struct FQuestProgressStep : public FQuestStep
 {
@@ -93,11 +70,7 @@ struct FQuestProgressStep : public FQuestStep
 	bool Completed = false;
 };
 
-<<<<<<< HEAD
-///This is a quest from the player perspective
-=======
 ///@brief This is a quest from the player perspective with information on completion
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 USTRUCT(BlueprintType)
 struct FQuestProgressData
 {
@@ -127,11 +100,7 @@ struct FQuestProgressData
 };
 
 
-<<<<<<< HEAD
-///Global quest Data
-=======
 ///@brief Global quest data
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 UCLASS(BlueprintType)
 class DIALOGANDQUESTPLUGIN_API UQuestJournalTitleData : public UObject
 {
@@ -145,11 +114,7 @@ public:
 	class UQuestJournalWindow* Parent = nullptr;
 };
 
-<<<<<<< HEAD
-///quest Step entry
-=======
 ///@brief Quest step entry
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 UCLASS(BlueprintType)
 class DIALOGANDQUESTPLUGIN_API UQuestEntryData : public UObject
 {
@@ -161,8 +126,4 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	UQuestJournalWindow* Parent = nullptr;
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84

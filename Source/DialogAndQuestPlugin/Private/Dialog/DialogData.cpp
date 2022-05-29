@@ -4,15 +4,6 @@
 #include "Dialog/DialogData.h"
 
 #include "Interfaces/DialogInterface.h"
-<<<<<<< HEAD
-
-bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor) const
-{
-	if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor))
-		return DialogInterfaceActor->GetRelation() >= MinimumRelation;
-
-	return false;
-=======
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
 
@@ -38,5 +29,4 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 	}
 
 	return StandardReturn;
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 }

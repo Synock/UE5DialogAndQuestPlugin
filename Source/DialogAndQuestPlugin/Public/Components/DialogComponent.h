@@ -52,31 +52,6 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_DialogData();
 
-
-	UPROPERTY(ReplicatedUsing=OnRep_DialogData, BlueprintReadOnly)
-	TArray<FDialogTopicStruct> DialogTopicData;
-
-	UPROPERTY(BlueprintReadOnly)
-	TMap<int64, FDialogTopicStruct> DialogTopic;
-
-	UPROPERTY(BlueprintReadWrite)
-	TMap<FString, int64> DialogTopicLUT;
-
-	UPROPERTY(Replicated, BlueprintReadWrite)
-	FString DialogName;
-
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	FString GoodGreeting;
-
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	FString BadGreeting;
-
-	UPROPERTY(Replicated, BlueprintReadWrite)
-	float GreetingLimit = 0.f;
-
-	UFUNCTION()
-	virtual void OnRep_DialogData();
-
 public:
 	UFUNCTION(BlueprintCallable)
 	void InitDialogFromID(int64 ID);

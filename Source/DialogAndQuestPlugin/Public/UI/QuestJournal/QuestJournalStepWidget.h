@@ -33,9 +33,5 @@ public:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
 	UFUNCTION(BlueprintCallable)
-<<<<<<< HEAD
-	static FString GetStrike(const FString & OriginalString);
-=======
 	static FString GetStrike(const FString& OriginalString);
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 };

@@ -24,8 +24,6 @@ class DIALOGANDQUESTPLUGIN_API IQuestBearerInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual UQuestBearerComponent* GetQuestBearerComponent() = 0;
-<<<<<<< HEAD
-=======
 
 	virtual const UQuestBearerComponent* GetQuestBearerComponentConst() const = 0;
 
@@ -48,5 +46,4 @@ public:
 
 	//this is called from Server
 	virtual void AddQuest(const FQuestMetaData& QuestMeta);
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 };

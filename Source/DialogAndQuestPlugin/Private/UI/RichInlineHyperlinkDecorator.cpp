@@ -22,21 +22,15 @@ public:
 	virtual bool Supports(const FTextRunParseResults& RunParseResult, const FString& Text) const override;
 };
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 URichInlineHyperlinkDecorator::URichInlineHyperlinkDecorator(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 FRichInlineHyperlinkDecorator::FRichInlineHyperlinkDecorator(URichTextBlock* InOwner,
                                                              URichInlineHyperlinkDecorator* Decorator)
 	: FRichTextDecorator(InOwner)
@@ -45,11 +39,8 @@ FRichInlineHyperlinkDecorator::FRichInlineHyperlinkDecorator(URichTextBlock* InO
 	LocalDecorator = Decorator;
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 bool FRichInlineHyperlinkDecorator::Supports(const FTextRunParseResults& RunParseResult, const FString& Text) const
 
 {
@@ -71,11 +62,8 @@ bool FRichInlineHyperlinkDecorator::Supports(const FTextRunParseResults& RunPars
 	return false;
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 TSharedPtr<SWidget> FRichInlineHyperlinkDecorator::CreateDecoratorWidget(
 	const FTextRunInfo& RunInfo, const FTextBlockStyle& TextStyle) const
 {
@@ -99,11 +87,7 @@ TSharedPtr<SWidget> FRichInlineHyperlinkDecorator::CreateDecoratorWidget(
 	return Link;
 }
 
-<<<<<<< HEAD
-//////////////////////////////////////////////////////////////////////////
-=======
 //----------------------------------------------------------------------------------------------------------------------
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 
 TSharedPtr<ITextDecorator> URichInlineHyperlinkDecorator::CreateDecorator(URichTextBlock* InOwner)
 {
@@ -111,11 +95,8 @@ TSharedPtr<ITextDecorator> URichInlineHyperlinkDecorator::CreateDecorator(URichT
 	return Output;
 }
 
-<<<<<<< HEAD
-=======
 //----------------------------------------------------------------------------------------------------------------------
 
->>>>>>> d66fcc9cdcab852f21806fd3dc4ffb935ff71e84
 void URichInlineHyperlinkDecorator::ClickFun_Implementation(const FString& ID)
 {
 	if (GEngine)
