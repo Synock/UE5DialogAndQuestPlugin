@@ -3,60 +3,61 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "UObject/Object.h"
 #include "QuestData.generated.h"
 
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
 USTRUCT(BlueprintType)
-struct FQuestStep
+struct FQuestStep : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 QuestID = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 QuestSubID = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString StepTitle;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString StepDescription;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool FinishingStep = false;
 };
 
 ///@brief Represent the complete quest info
 USTRUCT(BlueprintType)
-struct FQuestMetaData
+struct FQuestMetaData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 QuestID = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString QuestTitle;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool Repeatable = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<FQuestStep> Steps;
 };
 
 ///@brief This is a list of objectives that can be validated by a quest giver
 USTRUCT(BlueprintType)
-struct FQuestValidatableSteps
+struct FQuestValidatableSteps : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 QuestID = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> Steps;
 };
 
@@ -65,8 +66,11 @@ USTRUCT(BlueprintType)
 struct FQuestProgressStep : public FQuestStep
 {
 	GENERATED_BODY()
+	FQuestProgressStep() = default;
 
-	UPROPERTY(BlueprintReadOnly)
+	explicit FQuestProgressStep(const FQuestStep& Step);
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool Completed = false;
 };
 

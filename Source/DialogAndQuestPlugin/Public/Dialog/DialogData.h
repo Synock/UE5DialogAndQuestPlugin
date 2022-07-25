@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "Quest/QuestData.h"
 #include "UObject/Object.h"
 #include "DialogData.generated.h"
@@ -10,17 +11,17 @@
 ///@brief This represent a condition for a dialog to appear.
 /// Ideally you should update this to include your own data
 USTRUCT(BlueprintType)
-struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition
+struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 QuestId = 0;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 MinimumStepID = 0;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float MinimumRelation = 0.375f;
 
 	bool VerifyCondition(const AActor* DialogActor, const APlayerController* Controller) const;
@@ -28,63 +29,65 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition
 
 ///@brief This struct represent a dialog topic and its potential quest relation
 USTRUCT(BlueprintType)
-struct FDialogTopicStruct
+struct FDialogTopicStruct : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 Id = 0;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Topic;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FDialogTopicCondition TopicCondition;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString TopicText;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FQuestValidatableSteps QuestRelation;
 };
 
 ///@brief this is a topic bundle, composed of several possible dialog topics
 USTRUCT(BlueprintType)
-struct FDialogTopicBundleStruct
+struct FDialogTopicBundleStruct : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 Id = 0;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int64> TopicList;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString MetaName;
 };
 
 ///@brief This is a topic meta bundle, composed of several topic bundle
 USTRUCT(BlueprintType)
-struct FDialogTopicMetaBundleStruct
+struct FDialogTopicMetaBundleStruct : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int64 Id = 0;
 
 	///this is the greeting dialog when player relation is > MinimumRelation
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString GoodGreetingDialog = "Greetings";
 
 	///this is the greeting dialog when player relation is < MinimumRelation
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString BadGreetingDialog = "I don't wish to speak to your kind. Now get lost!";
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float MinimumRelation = 0.375;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int64> TopicBundleList;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString MetaName;
 };

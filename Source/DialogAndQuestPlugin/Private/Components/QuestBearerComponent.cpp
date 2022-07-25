@@ -112,7 +112,7 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 			NewQuestData.QuestTitle = QuestMeta.QuestTitle;
 			NewQuestData.QuestID = QuestMeta.QuestID;
 			NewQuestData.ProgressID = 0;
-			NewQuestData.CurrentStep = {QuestMeta.Steps[0], false};
+			NewQuestData.CurrentStep = FQuestProgressStep(QuestMeta.Steps[0]);
 			KnownQuestData.Add(std::move(NewQuestData));
 
 			KnownQuestDataLUT.Add(QuestMeta.QuestID, KnownQuestData.Num() - 1);
@@ -215,7 +215,7 @@ void UQuestBearerComponent::AuthorityAddQuest(int64 QuestID)
 			NewQuestData.QuestTitle = QuestData.QuestTitle;
 			NewQuestData.QuestID = QuestData.QuestID;
 			NewQuestData.ProgressID = 0;
-			NewQuestData.CurrentStep = {QuestData.Steps[0], false};
+			NewQuestData.CurrentStep = FQuestProgressStep(QuestData.Steps[0]);
 			KnownQuestData.Add(std::move(NewQuestData));
 
 			KnownQuestDataLUT.Add(QuestData.QuestID, KnownQuestData.Num() - 1);
