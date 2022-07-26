@@ -25,6 +25,45 @@ void UDialogMainComponent::BeginPlay()
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogMainComponent::AddTopicFromDataTable(UDataTable* DataTable)
+{
+	TArray<FName> RowNames = DataTable->GetRowNames();
+	for(auto& Row : RowNames)
+	{
+		FDialogTopicStruct* Item = DataTable->FindRow<FDialogTopicStruct>(Row, "");
+		if(Item)
+			AddTopic(*Item);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogMainComponent::AddBundleFromDataTable(UDataTable* DataTable)
+{
+	TArray<FName> RowNames = DataTable->GetRowNames();
+	for(auto& Row : RowNames)
+	{
+		FDialogTopicBundleStruct* Item = DataTable->FindRow<FDialogTopicBundleStruct>(Row, "");
+		if(Item)
+			AddBundle(*Item);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogMainComponent::AddMetaBundleFromDataTable(UDataTable* DataTable)
+{
+	TArray<FName> RowNames = DataTable->GetRowNames();
+	for(auto& Row : RowNames)
+	{
+		FDialogTopicMetaBundleStruct* Item = DataTable->FindRow<FDialogTopicMetaBundleStruct>(Row, "");
+		if(Item)
+			AddMetaBundle(*Item);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogMainComponent::AddTopic(const FDialogTopicStruct& NewTopic)
 {
 	DialogTopic.Add(NewTopic.Id, NewTopic);

@@ -69,7 +69,7 @@ public:
 	void DisplayDialogTopicFromString(const FString& ID);
 
 	UFUNCTION(BlueprintCallable)
-	void CloseWindow();
+	virtual void CloseWindow();
 
 	UPROPERTY(BlueprintAssignable)
 	FOnExitEvent OnExit;

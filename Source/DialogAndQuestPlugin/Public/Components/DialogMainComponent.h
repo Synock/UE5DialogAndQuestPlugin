@@ -39,10 +39,23 @@ protected:
 
 
 public:
+
+	UFUNCTION(BlueprintCallable)
+	void AddTopicFromDataTable(UDataTable* DataTable);
+
+	UFUNCTION(BlueprintCallable)
+	void AddBundleFromDataTable(UDataTable* DataTable);
+
+	UFUNCTION(BlueprintCallable)
+	void AddMetaBundleFromDataTable(UDataTable* DataTable);
+
+	UFUNCTION(BlueprintCallable)
 	void AddTopic(const FDialogTopicStruct& NewTopic);
 
+	UFUNCTION(BlueprintCallable)
 	void AddBundle(const FDialogTopicBundleStruct& Bundle);
 
+	UFUNCTION(BlueprintCallable)
 	void AddMetaBundle(const FDialogTopicMetaBundleStruct& MetaBundle);
 
 	UFUNCTION(BlueprintCallable)

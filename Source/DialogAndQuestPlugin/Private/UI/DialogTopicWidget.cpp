@@ -16,15 +16,18 @@ void UDialogTopicWidget::UpdateTopicData()
 {
 	ClearList();
 
-	for (auto& Topic : DialogComponent->GetAllDialogTopic())
+	if(DialogComponent && ParentDialog)
 	{
-		if (Topic.TopicCondition.VerifyCondition(ParentDialog->GetDialogActor(), GetOwningPlayer()))
+		for (auto& Topic : DialogComponent->GetAllDialogTopic())
 		{
-			FDialogTextData TextData;
-			TextData.Id = Topic.Id;
-			TextData.TopicName = Topic.Topic;
-			TextData.TopicText = Topic.TopicText;
-			AddTopicData(TextData);
+			if (Topic.TopicCondition.VerifyCondition(ParentDialog->GetDialogActor(), GetOwningPlayer()))
+			{
+				FDialogTextData TextData;
+				TextData.Id = Topic.Id;
+				TextData.TopicName = Topic.Topic;
+				TextData.TopicText = Topic.TopicText;
+				AddTopicData(TextData);
+			}
 		}
 	}
 }
