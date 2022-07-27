@@ -78,26 +78,34 @@ int64 UDialogComponent::GetDialogTopicID(const FString& ID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor) const
+FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor, const APlayerController* Controller) const
 {
 	FString ActualOut;
 	TArray<FString> Out;
 	OriginalString.ParseIntoArray(Out,TEXT(" "), true);
-	APlayerController* Controller = Cast<APlayerController>(GetOwner());
+
 	for (const auto& Word : Out)
 	{
-		if (DialogTopicLUT.Contains(Word) && DialogTopic.Find(*DialogTopicLUT.Find(Word))->TopicCondition.
+		FString LocalWord = Word;
+		if(Word[Word.Len()-1] == '.')
+			LocalWord = Word.Mid(0,Word.Len()-1);
+
+		if (DialogTopicLUT.Contains(LocalWord) && DialogTopic.Find(*DialogTopicLUT.Find(LocalWord))->TopicCondition.
 		                                                 VerifyCondition(DialogActor, Controller))
 		{
-			ActualOut += FString("<DialogLink id=\"") + Word + FString("\">") + Word + FString("</> ");
+			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + Word + FString("</> ");
 		}
 		else
 		{
 			ActualOut += Word + " ";
 		}
 	}
-
 	return ActualOut;
+}
+
+bool UDialogComponent::IsValid() const
+{
+	return GoodGreeting != "Error";
 }
 
 //----------------------------------------------------------------------------------------------------------------------

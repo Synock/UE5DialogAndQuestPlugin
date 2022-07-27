@@ -11,7 +11,7 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 {
 	bool StandardReturn = false;
 	if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor); DialogInterfaceActor)
-		StandardReturn = DialogInterfaceActor->GetRelation() >= MinimumRelation;
+		StandardReturn = DialogInterfaceActor->GetRelation(Controller->GetPawn()) >= MinimumRelation;
 
 	if (QuestId != 0)
 	{

@@ -21,7 +21,7 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	IDialogInterface* DialogActorInterface = Cast<IDialogInterface>(DialogActor);
 	if (DialogActor && DialogActorInterface)
 	{
-		RelationValue = DialogActorInterface->GetRelation();
+		RelationValue = DialogActorInterface->GetRelation(GetOwningPlayerPawn());
 		RelationString = DialogActorInterface->GetRelationString(RelationValue);
 		DialogComponent = DialogActorInterface->GetDialogComponent();
 	}
@@ -31,15 +31,17 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 		PostInitRelation();
 	}
 
-
-	InitDialogUI();
 	Footer->InitDialog(this);
 	Header->InitDialog(this);
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
 
+
 	Header->SetRelationValue(RelationValue);
 	Header->SetRelationString(RelationString);
+
+	TopicText->ClearList();
+	TopicList->UpdateTopicData();
 
 	if (RelationValue >= DialogComponent->GetGreetingLimit())
 		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting());
@@ -47,13 +49,13 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting());
 
 
-	IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer());
-
-	if (BearerInterface)
+	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 	{
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.AddDynamic(
 			this, &UDialogWindow::DisplayJournalUpdate);
 	}
+
+
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,15 +72,11 @@ void UDialogWindow::DisplayDialogTopic(int64 ID)
 	TopicText->AddTopicText(ID);
 	//also try to update possible quest advancement here?
 
-	IQuestGiverInterface* GiverInterface = Cast<IQuestGiverInterface>(DialogActor);
-
-	if (GiverInterface)
+	if (IQuestGiverInterface* GiverInterface = Cast<IQuestGiverInterface>(DialogActor))
 	{
 		const FDialogTopicStruct& Topic = DialogComponent->GetDialogTopic(ID);
 
-		IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer());
-
-		if (BearerInterface)
+		if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 		{
 			if (Topic.QuestRelation.QuestID != 0)
 			{
@@ -104,10 +102,8 @@ void UDialogWindow::DisplayDialogTopicFromString(const FString& ID)
 
 void UDialogWindow::CloseWindow()
 {
-	IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer());
-
-	if (BearerInterface)
+	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
 
-	RemoveFromParent();
+	OnExit.Broadcast();
 }

@@ -7,7 +7,7 @@ void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
 {
 	FDialogTextData TextData;
 	TextData.Id = 0;
-	TextData.TopicText = DialogText;
+	TextData.TopicText = DialogComponent->ParseTextHyperlink(DialogText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
 	AddTopicData(TextData);
 }
 
@@ -27,6 +27,6 @@ void UDialogTextWidget::AddTopicText(int64 TopicID)
 	FDialogTextData TextData;
 	TextData.Id = Topic.Id;
 	TextData.TopicName = Topic.Topic;
-	TextData.TopicText = DialogComponent->ParseTextHyperlink(Topic.TopicText, ParentDialog->GetDialogActor());
+	TextData.TopicText = DialogComponent->ParseTextHyperlink(Topic.TopicText, ParentDialog->GetDialogActor(),GetOwningPlayer());
 	AddTopicData(TextData);
 }

@@ -25,10 +25,11 @@ protected:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void AddTopicData(const FDialogTextData& DialogTopic);
 
+public:
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void ClearList();
 
-public:
 	UFUNCTION(BlueprintCallable)
 	void AddEmptyTopicData(const FString& DialogText);
 

@@ -63,7 +63,7 @@ public:
 	int64 GetDialogTopicID(const FString& ID) const;
 
 	UFUNCTION(BlueprintCallable)
-	FString ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor) const;
+	FString ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor, const APlayerController* Controller) const;
 
 	UFUNCTION(BlueprintCallable)
 	const FString& GetGoodGreeting() const { return GoodGreeting; }
@@ -73,4 +73,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	float GetGreetingLimit() const { return GreetingLimit; }
+
+	UFUNCTION(BlueprintCallable)
+	bool IsValid() const;
 };

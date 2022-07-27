@@ -56,9 +56,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog);
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void InitDialogUI();
-
 	UFUNCTION(BlueprintCallable)
 	void DisplayDialogTopic(int64 ID);
 

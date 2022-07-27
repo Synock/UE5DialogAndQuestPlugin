@@ -20,7 +20,7 @@ class DIALOGANDQUESTPLUGIN_API IDialogInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual float GetRelation() const = 0;
+	virtual float GetRelation(AActor* RelationWithActor) const = 0;
 
 	virtual UDialogComponent* GetDialogComponent() const = 0;
 
