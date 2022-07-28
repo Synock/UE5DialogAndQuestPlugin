@@ -87,13 +87,16 @@ FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, cons
 	for (const auto& Word : Out)
 	{
 		FString LocalWord = Word;
-		if(Word[Word.Len()-1] == '.')
+		bool ContainsPoint = Word[Word.Len()-1] == '.';
+		if(ContainsPoint)
 			LocalWord = Word.Mid(0,Word.Len()-1);
 
 		if (DialogTopicLUT.Contains(LocalWord) && DialogTopic.Find(*DialogTopicLUT.Find(LocalWord))->TopicCondition.
 		                                                 VerifyCondition(DialogActor, Controller))
 		{
-			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + Word + FString("</> ");
+			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + LocalWord + FString("</> ");
+			if(ContainsPoint)
+				ActualOut+=".";
 		}
 		else
 		{

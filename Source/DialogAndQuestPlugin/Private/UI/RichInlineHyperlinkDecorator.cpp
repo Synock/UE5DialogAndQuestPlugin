@@ -14,7 +14,7 @@ protected:
 	                                                  const FTextBlockStyle& TextStyle) const override;
 	FHyperlinkStyle LinkStyle;
 	FSimpleDelegate Delegate;
-	mutable TMap<FString, FSimpleDelegate> RetardedTest;
+	mutable TMap<FString, FSimpleDelegate> DelegateMap;
 	URichInlineHyperlinkDecorator* LocalDecorator;
 
 public:
@@ -50,8 +50,7 @@ bool FRichInlineHyperlinkDecorator::Supports(const FTextRunParseResults& RunPars
 		{
 			const FTextRange& IdRange = RunParseResult.MetaData[TEXT("id")];
 			FString IDString = Text.Mid(IdRange.BeginIndex, IdRange.EndIndex - IdRange.BeginIndex);
-			RetardedTest.FindOrAdd(IDString);
-			RetardedTest.Find(IDString)->BindLambda([IDString,this]()
+			DelegateMap.FindOrAdd(IDString).BindLambda([IDString,this]()
 			{
 				LocalDecorator->ClickFun(IDString);
 			});
@@ -69,12 +68,12 @@ TSharedPtr<SWidget> FRichInlineHyperlinkDecorator::CreateDecoratorWidget(
 {
 	TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> Model = MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
 	TSharedPtr<SRichTextHyperlink> Link;
-	if (RetardedTest.Contains(RunInfo.Content.ToString()))
+	if (DelegateMap.Contains(RunInfo.Content.ToString()))
 	{
 		Link = SNew(SRichTextHyperlink, Model.ToSharedRef())
 		   .Text(RunInfo.Content)
 		   .Style(&LinkStyle)
-		   .OnNavigate(*RetardedTest.Find(RunInfo.Content.ToString()));
+		   .OnNavigate(*DelegateMap.Find(RunInfo.Content.ToString()));
 	}
 	else
 	{
@@ -99,11 +98,6 @@ TSharedPtr<ITextDecorator> URichInlineHyperlinkDecorator::CreateDecorator(URichT
 
 void URichInlineHyperlinkDecorator::ClickFun_Implementation(const FString& ID)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Red, "click link");
-
-
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-
 	IDialogDisplayInterface::Execute_TriggerDialogOption(PlayerController, ID);
 }
