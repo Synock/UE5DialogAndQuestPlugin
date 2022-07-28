@@ -1,21 +1,21 @@
-// Copyright 2022 Maximilien (Synock) Guislain
+﻿// Copyright 2022 Maximilien (Synock) Guislain
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
-#include "DialogGiveWidget.generated.h"
+#include "DialogTradeWidget.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCancelEvent);
+class UDialogComponent;
+class UDialogWindow;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGiveEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCloseTrade);
 
 /**
- * 
+ *
  */
 UCLASS()
-class DIALOGANDQUESTPLUGIN_API UDialogGiveWidget : public UUserWidget
+class DIALOGANDQUESTPLUGIN_API UDialogTradeWidget : public UUserWidget
 {
 	GENERATED_BODY()
 protected:
@@ -30,8 +30,5 @@ public:
 	void InitDialog(UDialogWindow* InputParentDialog);
 
 	UPROPERTY(BlueprintAssignable)
-	FOnGiveEvent OnGive;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnCancelEvent OnCancel;
+	FOnCloseTrade OnClose;
 };

@@ -3,13 +3,51 @@
 
 #include "UI/DialogWindow.h"
 
+#include "Components/Button.h"
+#include "Components/WidgetSwitcher.h"
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
 #include "UI/DialogFooterWidget.h"
+#include "UI/DialogGiveWidget.h"
 #include "UI/DialogHeaderWidget.h"
 #include "UI/DialogTextWidget.h"
 #include "UI/DialogTopicWidget.h"
+#include "UI/DialogTradeWidget.h"
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayGiveWidget()
+{
+	if(GiveWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
+		TopicList->SetIsEnabled(false);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayTradeWidget()
+{
+	if(TradeWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
+		TopicList->SetIsEnabled(false);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayMainDialogWidget()
+{
+	if(TopicText)
+		WidgetSwitcher->SetActiveWidget(TopicText);
+
+	TopicList->SetIsEnabled(true);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
 {
@@ -36,6 +74,15 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
 
+	if (DialogActorInterface->CanTrade())
+		TradeButton->SetVisibility(ESlateVisibility::Visible);
+	else
+		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (DialogActorInterface->CanGive())
+		GiveButton->SetVisibility(ESlateVisibility::Visible);
+	else
+		GiveButton->SetVisibility(ESlateVisibility::Collapsed);
 
 	Header->SetRelationValue(RelationValue);
 	Header->SetRelationString(RelationString);
@@ -54,8 +101,6 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.AddDynamic(
 			this, &UDialogWindow::DisplayJournalUpdate);
 	}
-
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------

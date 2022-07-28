@@ -35,6 +35,21 @@ protected:
 	class UDialogTextWidget* TopicText = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
+	class UButton* TradeButton = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	UButton* GiveButton = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	class UWidgetSwitcher* WidgetSwitcher = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	class UDialogTradeWidget* TradeWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	class UDialogGiveWidget* GiveWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
 	AActor* DialogActor = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -45,6 +60,15 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void PostInitRelation();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayGiveWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayTradeWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayMainDialogWidget();
 
 public:
 	UFUNCTION(BlueprintCallable)

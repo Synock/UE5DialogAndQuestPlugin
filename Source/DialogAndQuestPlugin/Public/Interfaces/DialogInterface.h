@@ -25,4 +25,10 @@ public:
 	virtual UDialogComponent* GetDialogComponent() const = 0;
 
 	virtual FString GetRelationString(float Relation) const = 0;
+
+	virtual bool CanTrade() const;
+
+	virtual bool CanGive() const;
+
+	virtual FText GetCharacterNameForDialog() = 0;
 };
