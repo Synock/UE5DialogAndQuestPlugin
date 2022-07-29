@@ -71,6 +71,13 @@ protected:
 	void DisplayMainDialogWidget();
 
 public:
+
+	UFUNCTION(BlueprintCallable)
+	void AddTradeWidget(UDialogTradeWidget* TradeWidget);
+
+	UFUNCTION(BlueprintCallable)
+	void AddGiveWidget(UDialogGiveWidget* GiveWidget);
+
 	UFUNCTION(BlueprintCallable)
 	const UDialogComponent* GetDialogComponent() const { return DialogComponent; }
 

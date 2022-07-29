@@ -47,6 +47,18 @@ void UDialogWindow::DisplayMainDialogWidget()
 	TopicList->SetIsEnabled(true);
 }
 
+void UDialogWindow::AddTradeWidget(UDialogTradeWidget* TradeWidget)
+{
+	TradeWidgetPointer = TradeWidget;
+	WidgetSwitcher->AddChild(TradeWidgetPointer);
+}
+
+void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
+{
+	GiveWidgetPointer = GiveWidget;
+	WidgetSwitcher->AddChild(GiveWidgetPointer);
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
@@ -74,6 +86,10 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
 
+	/*
+	TradeButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayTradeWidget);
+	GiveButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayGiveWidget);
+*/
 	if (DialogActorInterface->CanTrade())
 		TradeButton->SetVisibility(ESlateVisibility::Visible);
 	else
@@ -87,6 +103,7 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	Header->SetRelationValue(RelationValue);
 	Header->SetRelationString(RelationString);
 
+	Header->SetDialogName(DialogActorInterface->GetCharacterNameForDialog().ToString());
 	TopicText->ClearList();
 	TopicList->UpdateTopicData();
 
