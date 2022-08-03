@@ -3,11 +3,20 @@
 
 #include "UI/DialogTextWidget.h"
 
+#include "Interfaces/DialogDisplayInterface.h"
+
 void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
 {
 	FDialogTextData TextData;
 	TextData.Id = 0;
-	TextData.TopicText = DialogComponent->ParseTextHyperlink(DialogText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
+	FString ScriptedText = DialogText;
+
+	if(const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
+	{
+		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText,GetWorld());
+	}
+
+	TextData.TopicText = DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
 	AddTopicData(TextData);
 }
 
@@ -27,6 +36,13 @@ void UDialogTextWidget::AddTopicText(int64 TopicID)
 	FDialogTextData TextData;
 	TextData.Id = Topic.Id;
 	TextData.TopicName = Topic.Topic;
-	TextData.TopicText = DialogComponent->ParseTextHyperlink(Topic.TopicText, ParentDialog->GetDialogActor(),GetOwningPlayer());
+	FString ScriptedText = Topic.TopicText;
+
+	if(const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
+	{
+		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText,GetWorld());
+	}
+
+	TextData.TopicText = DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());
 	AddTopicData(TextData);
 }

@@ -32,6 +32,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void CreateDialogWindow(UDialogComponent* DialogComponent, AActor* DialogActor);
 
+	//this function is intended to process custom script within dialog lines, for instance to retrieve player name or whatever
+	virtual FString ProcessScriptedFunction(const FString& InputString, UWorld* WorldContext) const;
+	//----------------------------------------------------------------------------------------------------------------------
+
 	//UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	//static void TriggerDialogOption(const FString& DialogTopic);
 };
