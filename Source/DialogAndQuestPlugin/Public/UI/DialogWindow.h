@@ -9,6 +9,8 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTradeButtonEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGiveButtonEvent);
 
 /**
  * 
@@ -101,4 +103,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnExitEvent OnExit;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnTradeButtonEvent OnTrade;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnGiveButtonEvent OnGive;
 };

@@ -19,6 +19,7 @@
 
 void UDialogWindow::DisplayGiveWidget()
 {
+	OnGive.Broadcast();
 	if(GiveWidgetPointer)
 	{
 		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
@@ -30,6 +31,7 @@ void UDialogWindow::DisplayGiveWidget()
 
 void UDialogWindow::DisplayTradeWidget()
 {
+	OnTrade.Broadcast();
 	if(TradeWidgetPointer)
 	{
 		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
