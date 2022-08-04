@@ -55,12 +55,20 @@ const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestD
 	return QuestData.Steps[0];
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 void UQuestMainComponent::AddQuest(const FQuestMetaData& QuestData)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
 
 	QuestList.Add(QuestData.QuestID, QuestData);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestMainComponent::AddQuestFromDataTable(UDataTable* DataTable)
+{
 }
 
 //----------------------------------------------------------------------------------------------------------------------

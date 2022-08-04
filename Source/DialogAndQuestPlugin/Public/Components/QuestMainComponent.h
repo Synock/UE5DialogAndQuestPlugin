@@ -33,6 +33,9 @@ public:
 	void AddQuest(const FQuestMetaData& QuestData);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	void AddQuestFromDataTable(UDataTable* DataTable);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	const FQuestMetaData& GetQuestData(int64 QuestID) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
