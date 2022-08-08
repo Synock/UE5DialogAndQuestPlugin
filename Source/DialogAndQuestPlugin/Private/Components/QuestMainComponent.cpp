@@ -69,6 +69,12 @@ void UQuestMainComponent::AddQuest(const FQuestMetaData& QuestData)
 
 void UQuestMainComponent::AddQuestFromDataTable(UDataTable* DataTable)
 {
+	TArray<FName> RowNames = DataTable->GetRowNames();
+	for(const auto& Row : RowNames)
+	{
+		if(const FQuestMetaData* Item = DataTable->FindRow<FQuestMetaData>(Row, ""))
+			AddQuest(*Item);
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

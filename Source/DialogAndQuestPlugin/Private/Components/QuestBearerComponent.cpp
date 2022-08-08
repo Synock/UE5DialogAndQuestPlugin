@@ -26,7 +26,6 @@ void UQuestBearerComponent::BeginPlay()
 
 void UQuestBearerComponent::OnRep_KnownQuest()
 {
-	KnownQuestDispatcher.Broadcast();
 
 	int32 LocalID = 0;
 	for (const auto& QuestData : KnownQuestData)
@@ -39,6 +38,8 @@ void UQuestBearerComponent::OnRep_KnownQuest()
 		}
 		++LocalID;
 	}
+
+	KnownQuestDispatcher.Broadcast();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

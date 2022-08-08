@@ -24,11 +24,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	TMap<int64, FQuestValidatableSteps> ValidatableSteps;
+public:
 
 	UFUNCTION(BlueprintCallable)
 	void AddValidatableSteps(int64 QuestID, TArray<int32> Steps);
-
-public:
 
 	bool CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep);
 

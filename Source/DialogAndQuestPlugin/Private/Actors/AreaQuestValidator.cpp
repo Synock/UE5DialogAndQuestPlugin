@@ -22,10 +22,11 @@ AAreaQuestValidator::AAreaQuestValidator(): AActor()
 
 		BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 		BoxComponent->SetBoxExtent(FVector(200.f, 200.f, 200.f));
-		BoxComponent->bDynamicObstacle = true;
+		BoxComponent->bDynamicObstacle = false;
 		BoxComponent->SetupAttachment(GetRootComponent());
 		BoxComponent->SetGenerateOverlapEvents(true);
 		BoxComponent->SetIsReplicated(false);
+		BoxComponent->SetCanEverAffectNavigation(false);
 		SetRootComponent(BoxComponent);
 
 		OnActorBeginOverlap.AddDynamic(this, &AAreaQuestValidator::OnOverlapBegin);
@@ -38,13 +39,16 @@ void AAreaQuestValidator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DrawDebugBox(GetWorld(), GetActorLocation(), GetComponentsBoundingBox().GetExtent(), FColor::Red, true, -1, 0, 5);
-}
+	if(QuestComponent)
+	{
+		if(ValidatableSteps.QuestID != 0)
+		{
+			QuestComponent->AddValidatableSteps(ValidatableSteps.QuestID,ValidatableSteps.Steps);
+		}
+	}}
 
 void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
-	UDialogAndQuestPluginHelper::Log(
-		"Overlap begin between " + OverlappedActor->GetName() + " and " + OtherActor->GetName());
 	APawn* ActorAsPawn = Cast<APawn>(OtherActor);
 	if (!ActorAsPawn)
 		return;
@@ -62,6 +66,5 @@ void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherA
 
 void AAreaQuestValidator::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
 {
-	UDialogAndQuestPluginHelper::Log(
-		"Overlap end between " + OverlappedActor->GetName() + " and " + OtherActor->GetName());
+
 }

@@ -27,6 +27,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	TObjectPtr<UQuestGiverComponent> QuestComponent = nullptr;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FQuestValidatableSteps ValidatableSteps;
+
 	UFUNCTION()
 	void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
 
