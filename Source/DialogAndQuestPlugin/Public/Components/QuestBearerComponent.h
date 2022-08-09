@@ -59,6 +59,9 @@ public:
 	UPROPERTY(BlueprintAssignable) //this is public because its a dispatcher
 	FKnownQuestChanged KnownQuestDispatcher;
 
+	UPROPERTY(BlueprintAssignable) //this is public because its a dispatcher
+	FKnownQuestChanged NewQuestDispatcher;
+
 	UFUNCTION(BlueprintCallable)
 	void AuthorityAddQuest(int64 QuestID);
 

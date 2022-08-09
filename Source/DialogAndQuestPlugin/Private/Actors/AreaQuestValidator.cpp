@@ -4,7 +4,6 @@
 #include "Actors/AreaQuestValidator.h"
 
 #include "Interfaces/QuestBearerInterface.h"
-#include "Misc/DialogAndQuestPluginHelper.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -39,17 +38,21 @@ void AAreaQuestValidator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if(QuestComponent)
+	if (QuestComponent)
 	{
-		if(ValidatableSteps.QuestID != 0)
+		if (ValidatableSteps.QuestID != 0)
 		{
-			QuestComponent->AddValidatableSteps(ValidatableSteps.QuestID,ValidatableSteps.Steps);
+			QuestComponent->AddValidatableSteps(ValidatableSteps.QuestID, ValidatableSteps.Steps);
 		}
-	}}
+	}
+}
 
 void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
-	APawn* ActorAsPawn = Cast<APawn>(OtherActor);
+	if (!HasAuthority())
+		return;
+
+	const APawn* ActorAsPawn = Cast<APawn>(OtherActor);
 	if (!ActorAsPawn)
 		return;
 
@@ -66,5 +69,4 @@ void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherA
 
 void AAreaQuestValidator::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
 {
-
 }

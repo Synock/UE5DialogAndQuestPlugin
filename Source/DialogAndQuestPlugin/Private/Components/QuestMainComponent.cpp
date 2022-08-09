@@ -70,9 +70,9 @@ void UQuestMainComponent::AddQuest(const FQuestMetaData& QuestData)
 void UQuestMainComponent::AddQuestFromDataTable(UDataTable* DataTable)
 {
 	TArray<FName> RowNames = DataTable->GetRowNames();
-	for(const auto& Row : RowNames)
+	for (const auto& Row : RowNames)
 	{
-		if(const FQuestMetaData* Item = DataTable->FindRow<FQuestMetaData>(Row, ""))
+		if (const FQuestMetaData* Item = DataTable->FindRow<FQuestMetaData>(Row, ""))
 			AddQuest(*Item);
 	}
 }
@@ -125,8 +125,8 @@ void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		CurrentStepID = CurrentQuestProgress.CurrentStep.QuestSubID;
 	}
 
-	if (QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(
-		QuestID, FindNextStepID(CurrentQuest, CurrentStepID)))
+	int32 NextQuestStep = FindNextStepID(CurrentQuest, CurrentStepID);
+	if (QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(QuestID, NextQuestStep))
 	{
 		if (CurrentStepID == -1)
 		{

@@ -31,7 +31,10 @@ void UQuestBearerComponent::OnRep_KnownQuest()
 	for (const auto& QuestData : KnownQuestData)
 	{
 		if (!KnownQuestDataLUT.Contains(QuestData.QuestID))
+		{
 			KnownQuestDataLUT.Add(QuestData.QuestID, LocalID);
+			NewQuestDispatcher.Broadcast();
+		}
 		else
 		{
 			KnownQuestDataLUT[QuestData.QuestID] = LocalID;
