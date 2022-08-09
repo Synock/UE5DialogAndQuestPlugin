@@ -109,7 +109,7 @@ void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		return;
 	}
 
-	IQuestGiverInterface* QuestGiverInterface = Cast<IQuestGiverInterface>(Validator);
+	const IQuestGiverInterface* QuestGiverInterface = Cast<IQuestGiverInterface>(Validator);
 	if (!QuestGiverInterface)
 	{
 		UDialogAndQuestPluginHelper::Error("Tried to progress a quest from a non quest giver");
@@ -125,7 +125,7 @@ void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		CurrentStepID = CurrentQuestProgress.CurrentStep.QuestSubID;
 	}
 
-	int32 NextQuestStep = FindNextStepID(CurrentQuest, CurrentStepID);
+	const int32 NextQuestStep = FindNextStepID(CurrentQuest, CurrentStepID);
 	if (QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(QuestID, NextQuestStep))
 	{
 		if (CurrentStepID == -1)

@@ -21,3 +21,10 @@ FString UQuestJournalStepWidget::GetStrike(const FString& OriginalString)
 {
 	return "<Strike>" + OriginalString + "</>";
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+FString UQuestJournalStepWidget::GetBold(const FString& OriginalString)
+{
+	return "<Bold>" + OriginalString + "</>";
+}

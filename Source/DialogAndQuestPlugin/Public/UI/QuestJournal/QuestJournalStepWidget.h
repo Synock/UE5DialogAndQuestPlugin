@@ -34,4 +34,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	static FString GetStrike(const FString& OriginalString);
+
+	UFUNCTION(BlueprintCallable)
+	static FString GetBold(const FString& OriginalString);
 };
