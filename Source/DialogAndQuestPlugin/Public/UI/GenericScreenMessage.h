@@ -36,4 +36,7 @@ public:
 
 	void Tick(FGeometry MyGeometry, float InDeltaTime);
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, BlueprintCosmetic)
+	void SetText(const FText& Text);
+
 };
