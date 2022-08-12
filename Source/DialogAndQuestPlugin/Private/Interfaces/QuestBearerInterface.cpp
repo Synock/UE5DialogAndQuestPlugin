@@ -47,6 +47,12 @@ void IQuestBearerInterface::AddQuest(const FQuestMetaData& QuestMeta)
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void IQuestBearerInterface::GrantReward(UQuestRewardData* RewardData)
+{
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 bool IQuestBearerInterface::CanValidate(int64 QuestID, int32 StepID) const
 {
 	return GetQuestBearerComponentConst()->CanValidate(QuestID, StepID);

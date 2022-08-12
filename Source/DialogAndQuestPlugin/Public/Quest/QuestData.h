@@ -7,6 +7,14 @@
 #include "UObject/Object.h"
 #include "QuestData.generated.h"
 
+
+
+UCLASS(Blueprintable)
+class DIALOGANDQUESTPLUGIN_API UQuestRewardData : public UObject
+{
+	GENERATED_BODY()
+};
+
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
 USTRUCT(BlueprintType)
 struct FQuestStep : public FTableRowBase
@@ -27,6 +35,10 @@ struct FQuestStep : public FTableRowBase
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool FinishingStep = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UQuestRewardData* Reward = nullptr;
+
 };
 
 ///@brief Represent the complete quest info

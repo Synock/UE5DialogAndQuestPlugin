@@ -46,4 +46,6 @@ public:
 
 	//this is called from Server
 	virtual void AddQuest(const FQuestMetaData& QuestMeta);
+
+	virtual void GrantReward(UQuestRewardData* RewardData);
 };

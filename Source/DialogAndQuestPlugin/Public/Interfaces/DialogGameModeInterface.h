@@ -28,5 +28,5 @@ public:
 
 	virtual UQuestMainComponent* GetMainQuestComponent() = 0;
 
-	virtual void TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
+	virtual bool TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
 };

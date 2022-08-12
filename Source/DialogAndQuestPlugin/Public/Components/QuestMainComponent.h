@@ -42,5 +42,5 @@ public:
 	void ForceAddPlayerQuest(APlayerController* PlayerController, int64 QuestID);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	void TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
+	bool TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
 };

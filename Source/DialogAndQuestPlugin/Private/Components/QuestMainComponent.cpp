@@ -100,20 +100,20 @@ void UQuestMainComponent::ForceAddPlayerQuest(APlayerController* PlayerControlle
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator)
+bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator)
 {
 	IQuestBearerInterface* QuestBearerInterface = Cast<IQuestBearerInterface>(QuestBearer);
 	if (!QuestBearerInterface)
 	{
 		UDialogAndQuestPluginHelper::Error("Tried to progress a quest for a non quest bearer");
-		return;
+		return false;
 	}
 
 	const IQuestGiverInterface* QuestGiverInterface = Cast<IQuestGiverInterface>(Validator);
 	if (!QuestGiverInterface)
 	{
 		UDialogAndQuestPluginHelper::Error("Tried to progress a quest from a non quest giver");
-		return;
+		return false;
 	}
 
 	const FQuestMetaData& CurrentQuest = GetQuestData(QuestID);
@@ -132,15 +132,16 @@ void UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		{
 			UDialogAndQuestPluginHelper::Log("Adding Quest");
 			QuestBearerInterface->AddQuest(CurrentQuest);
+			return true;
 		}
-		else
-		{
-			UDialogAndQuestPluginHelper::Log("Progressing Quest");
-			QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
-		}
+
+		UDialogAndQuestPluginHelper::Log("Progressing Quest");
+		QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
+		return true;
+
 	}
-	else
-	{
-		UDialogAndQuestPluginHelper::Warning("Tried to validate an impossible quest state");
-	}
+
+	UDialogAndQuestPluginHelper::Warning("Tried to validate an impossible quest state");
+	return false;
+
 }

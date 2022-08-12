@@ -4,6 +4,7 @@
 #include "Components/QuestBearerComponent.h"
 
 #include "Interfaces/DialogGameModeInterface.h"
+#include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -47,6 +48,16 @@ void UQuestBearerComponent::OnRep_KnownQuest()
 
 //----------------------------------------------------------------------------------------------------------------------
 
+bool UQuestBearerComponent::Authority_TryProgressQuest(int64 QuestID, AActor* Validator)
+{
+	if (IDialogGameModeInterface* Gm = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld())))
+		return Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
+
+	return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 bool UQuestBearerComponent::Server_TryProgressAll_Validate(AActor* Validator)
 {
 	if (!Validator)
@@ -82,9 +93,14 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		ProgressID)
 	{
 		QData.CurrentStep.Completed = true;
+
+		if(QData.CurrentStep.Reward != nullptr)
+			if(IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
+				SelfBearerInterface->GrantReward(QData.CurrentStep.Reward);
+
+
 		QData.PreviousStep.Add(std::move(QData.CurrentStep));
 		QData.ProgressID = NextQuestStep.QuestSubID;
-
 
 		FQuestProgressStep NewStepProgress;
 		NewStepProgress.Completed = false;
@@ -128,8 +144,7 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 
 void UQuestBearerComponent::Server_TryProgressQuest_Implementation(int64 QuestID, AActor* Validator)
 {
-	if (IDialogGameModeInterface* Gm = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld())))
-		Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
+	Authority_TryProgressQuest(QuestID, Validator);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -31,12 +31,14 @@ protected:
 	UFUNCTION()
 	void OnRep_KnownQuest();
 
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	bool Authority_TryProgressQuest(int64 QuestID, AActor* Validator);
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TryProgressQuest(int64 QuestID, AActor* Validator);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TryProgressAll(AActor* Validator);
-
 
 public:
 
