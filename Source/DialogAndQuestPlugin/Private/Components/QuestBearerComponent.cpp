@@ -94,9 +94,9 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 	{
 		QData.CurrentStep.Completed = true;
 
-		if(QData.CurrentStep.Reward != nullptr)
+		if(QData.CurrentStep.RewardClass != nullptr)
 			if(IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
-				SelfBearerInterface->GrantReward(QData.CurrentStep.Reward);
+				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardClass);
 
 
 		QData.PreviousStep.Add(std::move(QData.CurrentStep));
