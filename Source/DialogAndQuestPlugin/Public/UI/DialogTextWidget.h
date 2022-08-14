@@ -6,6 +6,7 @@
 #include "DialogTextChunkWidget.h"
 #include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ListView.h"
 #include "DialogTextWidget.generated.h"
 
 /**
@@ -22,8 +23,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	const UDialogComponent* DialogComponent = nullptr;
 
+	UPROPERTY(BlueprintReadWrite)
+	UListView* ListViewWidget = nullptr;
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void AddTopicData(const FDialogTextData& DialogTopic);
+
+	UFUNCTION(BlueprintCallable)
+	FString ProcessText(const FString & InputString) const;
 
 public:
 
@@ -38,4 +45,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AddTopicText(int64 TopicID);
+
+	//Reprocess the already displayed text to find new Hyperlinks
+	UFUNCTION(BlueprintCallable)
+	void ReprocessTopicLinks();
 };

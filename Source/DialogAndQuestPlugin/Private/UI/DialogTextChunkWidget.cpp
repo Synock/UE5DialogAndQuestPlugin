@@ -15,3 +15,17 @@ void UDialogTextChunkWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		InitData(Data->Data);
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+FText UDialogTextChunkWidget::GetTextData() const
+{
+	return TextBlock->GetText();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogTextChunkWidget::SetTextData(const FText& NewTextData)
+{
+	TextBlock->SetText(NewTextData);
+}

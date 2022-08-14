@@ -196,6 +196,20 @@ bool UQuestBearerComponent::CanValidate(int64 QuestID, int32 StepID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
+bool UQuestBearerComponent::IsBeforeStep(int64 QuestID, int32 StepID) const
+{
+	return GetKnownQuest(QuestID).QuestID > 0 && GetKnownQuest(QuestID).ProgressID < StepID;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestBearerComponent::IsBeforeOrAtStep(int64 QuestID, int32 StepID) const
+{
+	return GetKnownQuest(QuestID).QuestID > 0 && GetKnownQuest(QuestID).ProgressID <= StepID;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 bool UQuestBearerComponent::IsPastStep(int64 QuestID, int32 StepID) const
 {
 	return GetKnownQuest(QuestID).ProgressID > StepID;

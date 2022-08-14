@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/RichTextBlock.h"
+#include "Components/TextBlock.h"
 #include "DialogTextChunkWidget.generated.h"
 
 USTRUCT(BlueprintType)
@@ -57,6 +59,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UDialogWindow* ParentDialog = nullptr;
 
+	UPROPERTY(BlueprintReadWrite)
+	URichTextBlock* TextBlock = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	UTextBlock* TitleBock = nullptr;
+
 public:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+
+	UFUNCTION(BlueprintCallable)
+	FText GetTextData() const;
+
+	UFUNCTION(BlueprintCallable)
+	void SetTextData(const FText& NewTextData);
 };

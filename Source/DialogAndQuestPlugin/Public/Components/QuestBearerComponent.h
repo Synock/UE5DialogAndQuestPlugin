@@ -52,6 +52,10 @@ public:
 	
 	bool CanValidate(int64 QuestID, int32 StepID) const;
 
+	bool IsBeforeStep(int64 QuestID, int32 StepID) const;
+
+	bool IsBeforeOrAtStep(int64 QuestID, int32 StepID) const;
+
 	bool IsPastStep(int64 QuestID, int32 StepID) const;
 	
 	bool IsAtOrPastStep(int64 QuestID, int32 StepID) const;

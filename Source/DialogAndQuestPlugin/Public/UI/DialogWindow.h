@@ -101,6 +101,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void CloseWindow();
 
+	UFUNCTION(BlueprintCallable)
+	virtual void RefreshDialogOptions();
+
 	UPROPERTY(BlueprintAssignable)
 	FOnExitEvent OnExit;
 

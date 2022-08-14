@@ -5,18 +5,23 @@
 
 #include "Interfaces/DialogDisplayInterface.h"
 
-void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
+FString UDialogTextWidget::ProcessText(const FString& InputString) const
 {
-	FDialogTextData TextData;
-	TextData.Id = 0;
-	FString ScriptedText = DialogText;
+	FString ScriptedText = InputString;
 
 	if(const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
 	{
 		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText,GetWorld());
 	}
 
-	TextData.TopicText = DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
+	return DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
+}
+
+void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
+{
+	FDialogTextData TextData;
+	TextData.Id = 0;
+	TextData.TopicText = ProcessText(DialogText);
 	AddTopicData(TextData);
 }
 
@@ -36,13 +41,22 @@ void UDialogTextWidget::AddTopicText(int64 TopicID)
 	FDialogTextData TextData;
 	TextData.Id = Topic.Id;
 	TextData.TopicName = Topic.Topic;
-	FString ScriptedText = Topic.TopicText;
-
-	if(const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
-	{
-		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText,GetWorld());
-	}
-
-	TextData.TopicText = DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());
+	TextData.TopicText = ProcessText(Topic.TopicText);
 	AddTopicData(TextData);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogTextWidget::ReprocessTopicLinks()
+{
+	for(auto& DialogTextChunk : ListViewWidget->GetDisplayedEntryWidgets())
+	{
+		if(UDialogTextChunkWidget* DialogChunkWidget = Cast<UDialogTextChunkWidget>(DialogTextChunk))
+		{
+			const FText& CurrentText = DialogChunkWidget->GetTextData();
+
+			FString NewText = ProcessText(CurrentText.ToString());
+			DialogChunkWidget->SetTextData(FText::FromString(NewText));
+		}
+	}
 }

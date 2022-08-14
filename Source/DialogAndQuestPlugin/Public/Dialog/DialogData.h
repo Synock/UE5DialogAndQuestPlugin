@@ -8,6 +8,16 @@
 #include "UObject/Object.h"
 #include "DialogData.generated.h"
 
+UENUM(BlueprintType)
+enum struct EQuestStepConditionType: uint8
+{
+	Equal,
+	Lesser,
+	LesserEqual,
+	Greater,
+	GreaterEqual
+};
+
 ///@brief This represent a condition for a dialog to appear.
 /// Ideally you should update this to include your own data
 USTRUCT(BlueprintType)
@@ -22,8 +32,11 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	int32 MinimumStepID = 0;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	float MinimumRelation = 0.375f;
+	EQuestStepConditionType StepCondition = EQuestStepConditionType::Equal;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float MinimumRelation = 0.375f;
+	
 	bool VerifyCondition(const AActor* DialogActor, const APlayerController* Controller) const;
 };
 

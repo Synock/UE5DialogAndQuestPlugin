@@ -126,6 +126,7 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 
 void UDialogWindow::DisplayJournalUpdate()
 {
+	RefreshDialogOptions();
 	TopicText->AddEmptyTopicData("<Italic>Your quest journal has been updated.</>");
 }
 
@@ -170,4 +171,12 @@ void UDialogWindow::CloseWindow()
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
 
 	OnExit.Broadcast();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::RefreshDialogOptions()
+{
+	TopicList->UpdateTopicData();
+	TopicText->ReprocessTopicLinks();
 }
