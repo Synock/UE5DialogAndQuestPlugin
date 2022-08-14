@@ -170,12 +170,21 @@ bool UQuestBearerComponent::IsQuestKnown(int64 QuestID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-bool UQuestBearerComponent::CanDisplay(int64 QuestID, int32 StepID) const
+bool UQuestBearerComponent::CanDisplay(int64 QuestID, int32 StepID, EQuestStepConditionType Condition) const
 {
 	if (!IsQuestKnown(QuestID))
 		return false;
 
-	return IsAtStep(QuestID, StepID);
+	switch (Condition)
+	{
+	default:
+	case EQuestStepConditionType::Equal: return IsAtStep(QuestID, StepID);
+	case EQuestStepConditionType::Lesser: return IsBeforeStep(QuestID, StepID);
+	case EQuestStepConditionType::LesserEqual: return IsBeforeOrAtStep(QuestID, StepID);
+	case EQuestStepConditionType::Greater: return IsPastStep(QuestID, StepID);
+	case EQuestStepConditionType::GreaterEqual: return IsAtOrPastStep(QuestID, StepID);
+	}
+
 }
 
 //----------------------------------------------------------------------------------------------------------------------

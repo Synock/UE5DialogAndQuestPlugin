@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Dialog/DialogData.h"
 #include "Quest/QuestData.h"
 #include "QuestBearerComponent.generated.h"
 
@@ -48,7 +49,7 @@ public:
 
 	bool IsQuestKnown(int64 QuestID) const;
 
-	bool CanDisplay(int64 QuestID, int32 StepID) const;
+	bool CanDisplay(int64 QuestID, int32 StepID, EQuestStepConditionType Condition) const;
 	
 	bool CanValidate(int64 QuestID, int32 StepID) const;
 

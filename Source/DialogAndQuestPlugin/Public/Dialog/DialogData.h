@@ -5,18 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Quest/QuestData.h"
-#include "UObject/Object.h"
 #include "DialogData.generated.h"
-
-UENUM(BlueprintType)
-enum struct EQuestStepConditionType: uint8
-{
-	Equal,
-	Lesser,
-	LesserEqual,
-	Greater,
-	GreaterEqual
-};
 
 ///@brief This represent a condition for a dialog to appear.
 /// Ideally you should update this to include your own data

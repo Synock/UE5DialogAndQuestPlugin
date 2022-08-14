@@ -15,11 +15,11 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 
 	if (QuestId != 0)
 	{
-		if (const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller); QuestBearer)
+		if (const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller))
 		{
-			if (const IQuestGiverInterface* QuestActor = Cast<IQuestGiverInterface>(DialogActor); QuestActor)
+			if (const IQuestGiverInterface* QuestActor = Cast<IQuestGiverInterface>(DialogActor))
 			{
-				const bool QuestCondition = QuestBearer->CanDisplay(QuestId, MinimumStepID);
+				const bool QuestCondition = QuestBearer->CanDisplay(QuestId, MinimumStepID, StepCondition);
 
 				return QuestCondition && StandardReturn;
 			}

@@ -60,7 +60,7 @@ bool IQuestBearerInterface::CanValidate(int64 QuestID, int32 StepID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-bool IQuestBearerInterface::CanDisplay(int64 QuestID, int32 StepID) const
+bool IQuestBearerInterface::CanDisplay(int64 QuestID, int32 StepID, EQuestStepConditionType Condition) const
 {
-	return GetQuestBearerComponentConst()->CanDisplay(QuestID, StepID);
+	return GetQuestBearerComponentConst()->CanDisplay(QuestID, StepID, Condition);
 }

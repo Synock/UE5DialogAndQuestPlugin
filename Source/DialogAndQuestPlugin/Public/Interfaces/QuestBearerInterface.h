@@ -29,7 +29,7 @@ public:
 
 	virtual bool CanValidate(int64 QuestID, int32 StepID) const;
 
-	virtual bool CanDisplay(int64 QuestID, int32 StepID) const;
+	virtual bool CanDisplay(int64 QuestID, int32 StepID, EQuestStepConditionType Condition = EQuestStepConditionType::Equal) const;
 
 	//this is called from client
 	virtual void TryProgressQuest(int64 QuestID, AActor* Validator);

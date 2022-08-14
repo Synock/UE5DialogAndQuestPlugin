@@ -7,7 +7,15 @@
 #include "UObject/Object.h"
 #include "QuestData.generated.h"
 
-
+UENUM(BlueprintType)
+enum struct EQuestStepConditionType: uint8
+{
+	Equal,
+	Lesser,
+	LesserEqual,
+	Greater,
+	GreaterEqual
+};
 
 UCLASS(MinimalAPI, BlueprintType, Blueprintable)
 class UQuestRewardData : public UObject
