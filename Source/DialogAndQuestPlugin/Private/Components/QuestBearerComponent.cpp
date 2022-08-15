@@ -108,6 +108,7 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		NewStepProgress.StepTitle = NextQuestStep.StepTitle;
 		NewStepProgress.QuestID = NextQuestStep.QuestID;
 		NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
+		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
 		if (NextQuestStep.FinishingStep)
 		{
 			NewStepProgress.Completed = NextQuestStep.FinishingStep;
