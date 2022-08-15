@@ -163,6 +163,14 @@ void UDialogWindow::DisplayDialogTopicFromString(const FString& ID)
 	DisplayDialogTopic(DialogComponent->GetDialogTopicID(ID));
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayPlainString(const FString& PlainString)
+{
+	TopicText->AddEmptyTopicData(PlainString);
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::CloseWindow()

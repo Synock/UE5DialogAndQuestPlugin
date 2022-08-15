@@ -109,6 +109,8 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		NewStepProgress.QuestID = NextQuestStep.QuestID;
 		NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
 		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
+		NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
+		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
 		if (NextQuestStep.FinishingStep)
 		{
 			NewStepProgress.Completed = NextQuestStep.FinishingStep;
@@ -139,6 +141,51 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 			KnownQuestDataLUT.Add(QuestMeta.QuestID, KnownQuestData.Num() - 1);
 		}
 	}
+}
+
+bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID, const TArray<int32>& InputItems, float InputCoins,
+	TArray<int32>& OutputItems, float& OutputCoins)
+{
+
+	OutputItems = InputItems;
+	OutputCoins = InputCoins;
+
+	if(!IsAtStep(QuestID,StepID))
+		return false;
+
+	const auto& CurrentStep = GetKnownQuest(QuestID).CurrentStep;
+
+	const bool IsExpectingSomething = !CurrentStep.NecessaryItems.IsEmpty() || CurrentStep.NecessaryCoins != 0.f;
+
+	if(!IsExpectingSomething)
+		return false;
+
+	TArray<int32> NecessaryItems = CurrentStep.NecessaryItems;
+	if(!NecessaryItems.IsEmpty())
+	{
+		for(const auto & ItemID: InputItems)
+		{
+			int32 Index = NecessaryItems.Find(ItemID);
+			if(Index >= 0)
+			{
+				NecessaryItems.RemoveAt(Index);
+				OutputItems.Remove(ItemID);
+				continue;
+			}
+		}
+	}
+
+	bool GivenItemIsOK = NecessaryItems.IsEmpty();
+
+	float NecessaryCoins = CurrentStep.NecessaryCoins;
+	NecessaryCoins-= InputCoins;
+
+	bool GivenCashIsOk = NecessaryCoins <= 0.f;
+
+	if(GivenItemIsOK && GivenCashIsOk)
+		return true;
+
+	return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

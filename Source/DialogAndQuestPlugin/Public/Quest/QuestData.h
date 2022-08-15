@@ -21,7 +21,6 @@ UCLASS(MinimalAPI, BlueprintType, Blueprintable)
 class UQuestRewardData : public UObject
 {
 	GENERATED_BODY()
-
 };
 
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
@@ -45,9 +44,14 @@ struct FQuestStep : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool FinishingStep = false;
 
-	UPROPERTY(BlueprintReadWrite,EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TSubclassOf<UQuestRewardData> RewardClass;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TArray<int32> NecessaryItems;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float NecessaryCoins = 0.f;
 };
 
 ///@brief Represent the complete quest info

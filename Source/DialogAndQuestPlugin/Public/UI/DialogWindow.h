@@ -99,6 +99,9 @@ public:
 	void DisplayDialogTopicFromString(const FString& ID);
 
 	UFUNCTION(BlueprintCallable)
+	void DisplayPlainString(const FString& PlainString);
+
+	UFUNCTION(BlueprintCallable)
 	virtual void CloseWindow();
 
 	UFUNCTION(BlueprintCallable)

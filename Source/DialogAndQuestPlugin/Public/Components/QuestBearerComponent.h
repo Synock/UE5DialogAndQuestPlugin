@@ -82,4 +82,8 @@ public:
 
 	void AddQuest(const FQuestMetaData& QuestMeta);
 
+	UFUNCTION(BlueprintCallable)
+	bool CanValidateStepWithItems(int64 QuestID, int32 StepID, const TArray<int32>& InputItems, float InputCoins,
+		TArray<int32>& OutputItems, float& OutputCoins);
+
 };
