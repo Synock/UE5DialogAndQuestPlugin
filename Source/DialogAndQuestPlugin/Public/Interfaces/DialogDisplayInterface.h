@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	UDialogWindow* GetDialogWindow() const;
 
+	UFUNCTION(Client, Unreliable)
+	virtual void ForceDisplayTextInDialog(const FString& TextString) = 0;
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void CreateDialogWindow(UDialogComponent* DialogComponent, AActor* DialogActor);
 
