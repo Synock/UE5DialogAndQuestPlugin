@@ -52,6 +52,9 @@ struct FQuestStep : public FTableRowBase
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float NecessaryCoins = 0.f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FString ItemTurnInDialog;
 };
 
 ///@brief Represent the complete quest info

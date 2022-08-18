@@ -51,7 +51,9 @@ void UQuestBearerComponent::OnRep_KnownQuest()
 bool UQuestBearerComponent::Authority_TryProgressQuest(int64 QuestID, AActor* Validator)
 {
 	if (IDialogGameModeInterface* Gm = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
 		return Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
+	}
 
 	return false;
 }
@@ -111,6 +113,7 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
 		NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
 		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
+		NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
 		if (NextQuestStep.FinishingStep)
 		{
 			NewStepProgress.Completed = NextQuestStep.FinishingStep;
@@ -165,8 +168,7 @@ bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID
 	{
 		for(const auto & ItemID: InputItems)
 		{
-			int32 Index = NecessaryItems.Find(ItemID);
-			if(Index >= 0)
+			if(const int32 Index = NecessaryItems.Find(ItemID); Index >= 0)
 			{
 				NecessaryItems.RemoveAt(Index);
 				OutputItems.Remove(ItemID);
@@ -175,13 +177,12 @@ bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID
 		}
 	}
 
-	bool GivenItemIsOK = NecessaryItems.IsEmpty();
+	const bool GivenItemIsOK = NecessaryItems.IsEmpty();
 
 	float NecessaryCoins = CurrentStep.NecessaryCoins;
-	NecessaryCoins-= InputCoins;
+	NecessaryCoins -= InputCoins;
 
-	bool GivenCashIsOk = NecessaryCoins <= 0.f;
-
+	const bool GivenCashIsOk = NecessaryCoins <= 0.f;
 	if(GivenItemIsOK && GivenCashIsOk)
 		return true;
 
