@@ -3,6 +3,7 @@
 
 #include "Components/QuestBearerComponent.h"
 
+#include "Interfaces/DialogDisplayInterface.h"
 #include "Interfaces/DialogGameModeInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
@@ -52,7 +53,8 @@ bool UQuestBearerComponent::Authority_TryProgressQuest(int64 QuestID, AActor* Va
 {
 	if (IDialogGameModeInterface* Gm = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
-		return Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
+		const bool ProgressStatus = Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
+		return ProgressStatus;
 	}
 
 	return false;
