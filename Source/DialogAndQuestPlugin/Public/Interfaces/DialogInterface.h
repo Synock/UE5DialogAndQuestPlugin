@@ -30,5 +30,7 @@ public:
 
 	virtual bool CanGive() const;
 
+	virtual bool CanTrain() const;
+
 	virtual FText GetCharacterNameForDialog() = 0;
 };

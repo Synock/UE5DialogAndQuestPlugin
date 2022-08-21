@@ -11,6 +11,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTradeButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGiveButtonEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrainButtonEvent);
 
 /**
  * 
@@ -43,6 +44,9 @@ protected:
 	UButton* GiveButton = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
+	UButton* TrainButton = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
 	class UWidgetSwitcher* WidgetSwitcher = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -50,6 +54,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	class UDialogGiveWidget* GiveWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	class UDialogTrainWidget* TrainWidgetPointer = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
 	AActor* DialogActor = nullptr;
@@ -71,6 +78,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void DisplayMainDialogWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayTrainDialogWidget();
 
 public:
 
@@ -115,4 +125,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnGiveButtonEvent OnGive;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnTrainButtonEvent OnTrain;
 };

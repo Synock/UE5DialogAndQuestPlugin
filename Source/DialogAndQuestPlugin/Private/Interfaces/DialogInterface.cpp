@@ -12,3 +12,8 @@ bool IDialogInterface::CanGive() const
 {
 	return true;
 }
+
+bool IDialogInterface::CanTrain() const
+{
+	return false;
+}

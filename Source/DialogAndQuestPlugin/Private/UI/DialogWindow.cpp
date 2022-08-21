@@ -14,6 +14,7 @@
 #include "UI/DialogTextWidget.h"
 #include "UI/DialogTopicWidget.h"
 #include "UI/DialogTradeWidget.h"
+#include "UI/DialogTrainWidget.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -49,11 +50,27 @@ void UDialogWindow::DisplayMainDialogWidget()
 	TopicList->SetIsEnabled(true);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayTrainDialogWidget()
+{
+	OnTrain.Broadcast();
+	if(TrainWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
+		TopicList->SetIsEnabled(false);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogWindow::AddTradeWidget(UDialogTradeWidget* TradeWidget)
 {
 	TradeWidgetPointer = TradeWidget;
 	WidgetSwitcher->AddChild(TradeWidgetPointer);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
 {
@@ -101,6 +118,11 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 		GiveButton->SetVisibility(ESlateVisibility::Visible);
 	else
 		GiveButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (DialogActorInterface->CanTrain())
+		TrainButton->SetVisibility(ESlateVisibility::Visible);
+	else
+		TrainButton->SetVisibility(ESlateVisibility::Collapsed);
 
 	Header->SetRelationValue(RelationValue);
 	Header->SetRelationString(RelationString);
