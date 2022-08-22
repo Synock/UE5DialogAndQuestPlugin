@@ -30,6 +30,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitDialog(UDialogWindow* InputParentDialog);
 
+	//Internal function to do stuff when the widget is displayed
+	UFUNCTION(BlueprintCallable,BlueprintImplementableEvent)
+	void DoOnDisplay();
+
 	UPROPERTY(BlueprintAssignable)
 	FOnCloseTrain OnClose;
 

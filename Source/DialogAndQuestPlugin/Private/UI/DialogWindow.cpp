@@ -59,6 +59,7 @@ void UDialogWindow::DisplayTrainDialogWidget()
 	{
 		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
 		TopicList->SetIsEnabled(false);
+		TrainWidgetPointer->DoOnDisplay();
 	}
 }
 
