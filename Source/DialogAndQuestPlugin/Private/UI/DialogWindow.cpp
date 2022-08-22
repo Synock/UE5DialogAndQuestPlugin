@@ -80,6 +80,14 @@ void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogWindow::AddTrainWidget(UDialogTrainWidget* TrainWidget)
+{
+	TrainWidgetPointer = TrainWidget;
+	WidgetSwitcher->AddChild(TrainWidgetPointer);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
 {
 	check(InputDialogComponent);

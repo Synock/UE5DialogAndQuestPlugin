@@ -91,6 +91,9 @@ public:
 	void AddGiveWidget(UDialogGiveWidget* GiveWidget);
 
 	UFUNCTION(BlueprintCallable)
+	void AddTrainWidget(UDialogTrainWidget* TrainWidget);
+
+	UFUNCTION(BlueprintCallable)
 	const UDialogComponent* GetDialogComponent() const { return DialogComponent; }
 
 	UFUNCTION(BlueprintCallable)
