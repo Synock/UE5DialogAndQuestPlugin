@@ -8,6 +8,7 @@
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
+#include "UI/DialogBankWidget.h"
 #include "UI/DialogFooterWidget.h"
 #include "UI/DialogGiveWidget.h"
 #include "UI/DialogHeaderWidget.h"
@@ -21,7 +22,7 @@
 void UDialogWindow::DisplayGiveWidget()
 {
 	OnGive.Broadcast();
-	if(GiveWidgetPointer)
+	if (GiveWidgetPointer)
 	{
 		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
 		TopicList->SetIsEnabled(false);
@@ -33,7 +34,7 @@ void UDialogWindow::DisplayGiveWidget()
 void UDialogWindow::DisplayTradeWidget()
 {
 	OnTrade.Broadcast();
-	if(TradeWidgetPointer)
+	if (TradeWidgetPointer)
 	{
 		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
 		TopicList->SetIsEnabled(false);
@@ -44,8 +45,10 @@ void UDialogWindow::DisplayTradeWidget()
 
 void UDialogWindow::DisplayMainDialogWidget()
 {
-	if(TopicText)
+	if (TopicText)
+	{
 		WidgetSwitcher->SetActiveWidget(TopicText);
+	}
 
 	TopicList->SetIsEnabled(true);
 }
@@ -55,11 +58,24 @@ void UDialogWindow::DisplayMainDialogWidget()
 void UDialogWindow::DisplayTrainDialogWidget()
 {
 	OnTrain.Broadcast();
-	if(TrainWidgetPointer)
+	if (TrainWidgetPointer)
 	{
 		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
 		TopicList->SetIsEnabled(false);
 		TrainWidgetPointer->DoOnDisplay();
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayBankDialogWidget()
+{
+	OnBank.Broadcast();
+	if (BankWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(BankWidgetPointer);
+		TopicList->SetIsEnabled(false);
+		BankWidgetPointer->DoOnDisplay();
 	}
 }
 
@@ -85,6 +101,14 @@ void UDialogWindow::AddTrainWidget(UDialogTrainWidget* TrainWidget)
 {
 	TrainWidgetPointer = TrainWidget;
 	WidgetSwitcher->AddChild(TrainWidgetPointer);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::AddBankWidget(UDialogBankWidget* BankWidget)
+{
+	BankWidgetPointer = BankWidget;
+	WidgetSwitcher->AddChild(BankWidgetPointer);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -118,20 +142,40 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TradeButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayTradeWidget);
 	GiveButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayGiveWidget);
 */
-	if (DialogActorInterface->CanTrade())
+	if (TradeButton && DialogActorInterface->CanTrade())
+	{
 		TradeButton->SetVisibility(ESlateVisibility::Visible);
+	}
 	else
+	{
 		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
-	if (DialogActorInterface->CanGive())
+	if (GiveButton && DialogActorInterface->CanGive())
+	{
 		GiveButton->SetVisibility(ESlateVisibility::Visible);
+	}
 	else
+	{
 		GiveButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
-	if (DialogActorInterface->CanTrain())
+	if (TrainButton && DialogActorInterface->CanTrain())
+	{
 		TrainButton->SetVisibility(ESlateVisibility::Visible);
+	}
 	else
+	{
 		TrainButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (BankButton && DialogActorInterface->CanBank())
+	{
+		BankButton->SetVisibility(ESlateVisibility::Visible);
+	}
+	else
+	{
+		BankButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
 	Header->SetRelationValue(RelationValue);
 	Header->SetRelationString(RelationString);
@@ -141,9 +185,13 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicList->UpdateTopicData();
 
 	if (RelationValue >= DialogComponent->GetGreetingLimit())
+	{
 		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting());
+	}
 	else
+	{
 		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting());
+	}
 
 
 	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
@@ -179,8 +227,10 @@ void UDialogWindow::DisplayDialogTopic(int64 ID)
 				for (auto& StepData : Topic.QuestRelation.Steps)
 				{
 					if (BearerInterface->CanValidate(Topic.QuestRelation.QuestID, StepData))
+					{
 						BearerInterface->TryProgressQuest(
 							Topic.QuestRelation.QuestID, DialogActor);
+					}
 				}
 			}
 		}
@@ -207,7 +257,9 @@ void UDialogWindow::DisplayPlainString(const FString& PlainString)
 void UDialogWindow::CloseWindow()
 {
 	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
+	{
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
+	}
 
 	OnExit.Broadcast();
 }

@@ -12,6 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTradeButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGiveButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrainButtonEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBankButtonEvent);
 
 /**
  * 
@@ -47,6 +48,9 @@ protected:
 	UButton* TrainButton = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
+	UButton* BankButton = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
 	class UWidgetSwitcher* WidgetSwitcher = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -57,6 +61,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	class UDialogTrainWidget* TrainWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	class UDialogBankWidget* BankWidgetPointer = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
 	AActor* DialogActor = nullptr;
@@ -82,6 +89,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void DisplayTrainDialogWidget();
 
+	UFUNCTION(BlueprintCallable)
+	void DisplayBankDialogWidget();
+
 public:
 
 	UFUNCTION(BlueprintCallable)
@@ -92,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AddTrainWidget(UDialogTrainWidget* TrainWidget);
+
+	UFUNCTION(BlueprintCallable)
+	void AddBankWidget(UDialogBankWidget* BankWidget);
 
 	UFUNCTION(BlueprintCallable)
 	const UDialogComponent* GetDialogComponent() const { return DialogComponent; }
@@ -131,4 +144,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnTrainButtonEvent OnTrain;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnBankButtonEvent OnBank;
 };

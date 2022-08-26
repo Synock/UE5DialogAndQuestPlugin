@@ -17,3 +17,8 @@ bool IDialogInterface::CanTrain() const
 {
 	return false;
 }
+
+bool IDialogInterface::CanBank() const
+{
+	return false;
+}
