@@ -3,6 +3,7 @@
 
 #include "Components/QuestBearerComponent.h"
 
+#include "GameFramework/GameModeBase.h"
 #include "Interfaces/DialogDisplayInterface.h"
 #include "Interfaces/DialogGameModeInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
