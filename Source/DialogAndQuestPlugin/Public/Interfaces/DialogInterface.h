@@ -8,7 +8,7 @@
 #include "DialogInterface.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(Blueprintable)
+UINTERFACE(MinimalAPI, meta = (CannotImplementInterfaceInBlueprint))
 class UDialogInterface : public UInterface
 {
 	GENERATED_BODY()
@@ -26,6 +26,8 @@ public:
 
 	virtual FString GetRelationString(float Relation) const = 0;
 
+	virtual bool HasDialog() const = 0;
+
 	virtual bool CanTrade() const;
 
 	virtual bool CanGive() const;
@@ -34,5 +36,5 @@ public:
 
 	virtual bool CanBank() const;
 
-	virtual FText GetCharacterNameForDialog() = 0;
+	virtual FText GetCharacterNameForDialog() const = 0;
 };
