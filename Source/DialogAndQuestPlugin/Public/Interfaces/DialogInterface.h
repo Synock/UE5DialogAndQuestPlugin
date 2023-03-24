@@ -20,10 +20,13 @@ class DIALOGANDQUESTPLUGIN_API IDialogInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	UFUNCTION(BlueprintCallable)
 	virtual float GetRelation(AActor* RelationWithActor) const = 0;
 
+	UFUNCTION(BlueprintCallable)
 	virtual UDialogComponent* GetDialogComponent() const = 0;
 
+	UFUNCTION(BlueprintCallable)
 	virtual FString GetRelationString(float Relation) const = 0;
 
 	virtual bool HasDialog() const = 0;
