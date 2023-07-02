@@ -22,3 +22,8 @@ bool IDialogInterface::CanBank() const
 {
 	return false;
 }
+
+float IDialogInterface::GetMaxInteractionDistance() const
+{
+	return 500.f;
+}
