@@ -17,6 +17,8 @@ FString UDialogTextWidget::ProcessText(const FString& InputString) const
 	return DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
 {
 	FDialogTextData TextData;

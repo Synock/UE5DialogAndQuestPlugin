@@ -44,11 +44,15 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 	IDialogGameModeInterface* GM = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld()));
 	if (GM)
 	{
-		FullDialog = GM->GetMainDialogComponent()->GetAllDialogTopicForMetaBundle(ID);
+		auto DialogComponent = GM->GetMainDialogComponent();
+		if(DialogComponent)
+		{
+			FullDialog = DialogComponent->GetAllDialogTopicForMetaBundle(ID);
 
-		GoodGreeting = GM->GetMainDialogComponent()->GetGoodGreeting(ID);
-		BadGreeting = GM->GetMainDialogComponent()->GetBadGreeting(ID);
-		GreetingLimit = GM->GetMainDialogComponent()->GetGreetingRelationLimit(ID);
+			GoodGreeting = DialogComponent->GetGoodGreeting(ID);
+			BadGreeting = DialogComponent->GetBadGreeting(ID);
+			GreetingLimit = DialogComponent->GetGreetingRelationLimit(ID);
+		}
 	}
 
 	for (auto& DialogData : FullDialog)

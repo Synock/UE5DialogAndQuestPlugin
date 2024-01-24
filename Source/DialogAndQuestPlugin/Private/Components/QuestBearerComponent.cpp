@@ -52,6 +52,9 @@ void UQuestBearerComponent::OnRep_KnownQuest()
 
 bool UQuestBearerComponent::Authority_TryProgressQuest(int64 QuestID, AActor* Validator)
 {
+	if(!GetOwner()->HasAuthority())
+		return false;
+
 	if (IDialogGameModeInterface* Gm = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		const bool ProgressStatus = Gm->TryProgressQuest(QuestID, Cast<APlayerController>(GetOwner()), Validator);
