@@ -26,9 +26,10 @@ protected:
 	TMap<int64, FQuestMetaData> QuestList;
 
 	uint32 FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep);
+public:
 
 	const FQuestStep& FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep);
-public:
+
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void AddQuest(const FQuestMetaData& QuestData);
 

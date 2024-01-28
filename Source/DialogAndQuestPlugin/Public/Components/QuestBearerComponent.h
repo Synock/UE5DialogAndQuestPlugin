@@ -9,6 +9,7 @@
 #include "QuestBearerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FKnownQuestChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FQuestUpdated, int64, QuestID, int32, QuestStepID);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DIALOGANDQUESTPLUGIN_API UQuestBearerComponent : public UActorComponent
@@ -69,8 +70,14 @@ public:
 	UPROPERTY(BlueprintAssignable) //this is public because its a dispatcher
 	FKnownQuestChanged NewQuestDispatcher;
 
+	UPROPERTY(BlueprintAssignable)
+	FQuestUpdated QuestUpdateDispatcher;
+
 	UFUNCTION(BlueprintCallable)
 	void AuthorityAddQuest(int64 QuestID);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	void AuthoritySetupQuestData(int64 QuestID, int32 StepID);
 
 	UFUNCTION(BlueprintCallable)
 	void TryProgressQuest(int64 QuestID, AActor* Validator);

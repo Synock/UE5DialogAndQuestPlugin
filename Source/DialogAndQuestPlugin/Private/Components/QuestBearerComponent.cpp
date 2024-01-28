@@ -126,6 +126,8 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 			QData.Finished = true;
 		}
 		QData.CurrentStep = std::move(NewStepProgress);
+
+		QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID);
 	}
 
 	OnRep_KnownQuest();
@@ -148,9 +150,13 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 			KnownQuestData.Add(std::move(NewQuestData));
 
 			KnownQuestDataLUT.Add(QuestMeta.QuestID, KnownQuestData.Num() - 1);
+
+			QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID, 0);
 		}
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID, const TArray<int32>& InputItems, float InputCoins,
 	TArray<int32>& OutputItems, float& OutputCoins)
@@ -316,6 +322,33 @@ void UQuestBearerComponent::AuthorityAddQuest(int64 QuestID)
 			KnownQuestData.Add(std::move(NewQuestData));
 
 			KnownQuestDataLUT.Add(QuestData.QuestID, KnownQuestData.Num() - 1);
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID)
+{
+	if(GetOwnerRole() != ROLE_Authority)
+		return;
+
+	IDialogGameModeInterface* GM =  Cast<IDialogGameModeInterface>(GetWorld()->GetAuthGameMode());
+
+	check(GM);//You should have access to Main quest component
+
+	UQuestMainComponent* MQC =  GM->GetMainQuestComponent();
+
+	if(!MQC)
+		return;
+
+	AuthorityAddQuest(QuestID);
+	if (KnownQuestDataLUT.Contains(QuestID))
+	{
+		const FQuestMetaData& Meta = MQC->GetQuestData(QuestID);
+		for(int32 CurrentStepID = 0; CurrentStepID < StepID; ++CurrentStepID)
+		{
+			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID));
 		}
 	}
 }
