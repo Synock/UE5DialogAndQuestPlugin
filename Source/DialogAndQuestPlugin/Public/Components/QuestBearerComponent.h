@@ -85,7 +85,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryProgressAll(AActor* Validator);
 
-	void ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep);
+	void ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep, bool SkipReward = false);
 
 	void AddQuest(const FQuestMetaData& QuestMeta);
 

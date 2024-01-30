@@ -92,7 +92,7 @@ void UQuestBearerComponent::Server_TryProgressAll_Implementation(AActor* Validat
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep)
+void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep, bool SkipReward)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
@@ -102,7 +102,7 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 	{
 		QData.CurrentStep.Completed = true;
 
-		if(QData.CurrentStep.RewardClass != nullptr)
+		if(!SkipReward && QData.CurrentStep.RewardClass != nullptr)
 			if(IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
 				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardClass);
 
@@ -348,7 +348,7 @@ void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID)
 		const FQuestMetaData& Meta = MQC->GetQuestData(QuestID);
 		for(int32 CurrentStepID = 0; CurrentStepID < StepID; ++CurrentStepID)
 		{
-			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID));
+			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID), true);
 		}
 	}
 }
