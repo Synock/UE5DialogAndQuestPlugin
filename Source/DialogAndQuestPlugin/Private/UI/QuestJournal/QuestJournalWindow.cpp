@@ -31,6 +31,7 @@ void UQuestJournalWindow::InitJournal()
 
 	ListWidget->InitDialog(this);
 	DetailsWidget->InitDialog(this);
+	UpdateKnownQuest();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

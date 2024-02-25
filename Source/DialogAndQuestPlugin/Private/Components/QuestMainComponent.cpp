@@ -3,6 +3,7 @@
 
 #include "Components/QuestMainComponent.h"
 
+#include "Interfaces/DialogDisplayInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
 #include "Misc/DialogAndQuestPluginHelper.h"
@@ -137,6 +138,15 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 
 		UDialogAndQuestPluginHelper::Log("Progressing Quest");
 		QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
+
+		const FString& ProgressDialog = QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.
+															   ItemTurnInDialog;
+		if (!ProgressDialog.IsEmpty())
+		{
+			IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer);
+			DialogInterface->ForceDisplayTextInDialog(ProgressDialog);
+		}
+
 		return true;
 
 	}
