@@ -14,7 +14,10 @@ void UQuestJournalWindow::UpdateKnownQuest()
 		{
 			CurrentQuestID = QuestComponent->GetAllKnownQuest()[0].QuestID;
 		}
-		DisplayQuest(CurrentQuestID);
+
+		if(QuestComponent->GetAllKnownQuest().Num() > 0)
+			DisplayQuest(CurrentQuestID);
+
 	}
 
 }

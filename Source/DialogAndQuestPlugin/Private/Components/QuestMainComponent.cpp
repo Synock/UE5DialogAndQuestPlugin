@@ -131,27 +131,29 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 	{
 		if (CurrentStepID == -1)
 		{
-			UDialogAndQuestPluginHelper::Log("Adding Quest");
+			UDialogAndQuestPluginHelper::Log("Adding Quest id : " + FString::FormatAsNumber(CurrentQuest.QuestID));
 			QuestBearerInterface->AddQuest(CurrentQuest);
 			return true;
 		}
 
-		UDialogAndQuestPluginHelper::Log("Progressing Quest");
-		QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
+		UDialogAndQuestPluginHelper::Log("Progressing Quest id : " + FString::FormatAsNumber(CurrentQuest.QuestID) + " step : " + FString::FormatAsNumber(CurrentStepID));
 
 		const FString& ProgressDialog = QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.
-															   ItemTurnInDialog;
+																	   ItemTurnInDialog;
 		if (!ProgressDialog.IsEmpty())
 		{
 			IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer);
 			DialogInterface->ForceDisplayTextInDialog(ProgressDialog);
 		}
 
+		QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
+
 		return true;
 
 	}
 
-	UDialogAndQuestPluginHelper::Warning("Tried to validate an impossible quest state");
+	FString WarningMessage = "Tried to validate an impossible quest state QID: " + FString::FormatAsNumber(CurrentQuest.QuestID) + " Current step : " +  FString::FormatAsNumber(CurrentStepID);
+	UDialogAndQuestPluginHelper::Warning(WarningMessage);
 	return false;
 
 }

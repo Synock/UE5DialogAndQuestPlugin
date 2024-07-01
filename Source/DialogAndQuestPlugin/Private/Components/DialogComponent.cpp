@@ -45,7 +45,7 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 	if (GM)
 	{
 		auto DialogComponent = GM->GetMainDialogComponent();
-		if(DialogComponent)
+		if (DialogComponent)
 		{
 			FullDialog = DialogComponent->GetAllDialogTopicForMetaBundle(ID);
 
@@ -82,7 +82,8 @@ int64 UDialogComponent::GetDialogTopicID(const FString& ID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor, const APlayerController* Controller) const
+FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor,
+                                             const APlayerController* Controller) const
 {
 	FString ActualOut;
 	TArray<FString> Out;
@@ -91,16 +92,41 @@ FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, cons
 	for (const auto& Word : Out)
 	{
 		FString LocalWord = Word;
-		bool ContainsPoint = Word[Word.Len()-1] == '.';
-		if(ContainsPoint)
-			LocalWord = Word.Mid(0,Word.Len()-1);
+
+		char SupChar = 'y';
+
+		if (Word[Word.Len() - 1] == '.')
+		{
+			SupChar = '.';
+			LocalWord = Word.Mid(0, Word.Len() - 1);
+		}
+		else if (Word[Word.Len() - 1] == ',')
+		{
+			SupChar = ',';
+			LocalWord = Word.Mid(0, Word.Len() - 1);
+		}
+		else if (Word[Word.Len() - 1] == '!')
+		{
+			SupChar = '!';
+			LocalWord = Word.Mid(0, Word.Len() - 1);
+		}
+		else if (Word[Word.Len() - 1] == ':')
+		{
+			SupChar = ':';
+			LocalWord = Word.Mid(0, Word.Len() - 1);
+		}
+		else if (Word[Word.Len() - 1] == '?')
+		{
+			SupChar = '?';
+			LocalWord = Word.Mid(0, Word.Len() - 1);
+		}
 
 		if (DialogTopicLUT.Contains(LocalWord) && DialogTopic.Find(*DialogTopicLUT.Find(LocalWord))->TopicCondition.
-		                                                 VerifyCondition(DialogActor, Controller))
+		                                                      VerifyCondition(DialogActor, Controller))
 		{
 			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + LocalWord + FString("</> ");
-			if(ContainsPoint)
-				ActualOut+=".";
+			if (SupChar != 'y')
+				ActualOut += SupChar;
 		}
 		else
 		{
