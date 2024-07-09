@@ -124,14 +124,17 @@ FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, cons
 		if (DialogTopicLUT.Contains(LocalWord) && DialogTopic.Find(*DialogTopicLUT.Find(LocalWord))->TopicCondition.
 		                                                      VerifyCondition(DialogActor, Controller))
 		{
-			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + LocalWord + FString("</> ");
+			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + LocalWord + FString("</>");
 			if (SupChar != 'y')
 				ActualOut += SupChar;
 		}
 		else
 		{
-			ActualOut += Word + " ";
+			ActualOut += Word;
 		}
+
+
+		ActualOut+= " ";
 	}
 	return ActualOut;
 }
