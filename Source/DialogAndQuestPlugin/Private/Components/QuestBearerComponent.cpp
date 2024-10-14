@@ -98,7 +98,7 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		return;
 
 	if (auto& QData = KnownQuestData[KnownQuestDataLUT[QuestMeta.QuestID]]; NextQuestStep.QuestSubID != QData.
-		ProgressID)
+		ProgressID || QData.Repeatable)
 	{
 		QData.CurrentStep.Completed = true;
 
@@ -106,28 +106,30 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 			if(IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
 				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardClass);
 
-
-		QData.PreviousStep.Add(std::move(QData.CurrentStep));
-		QData.ProgressID = NextQuestStep.QuestSubID;
-
-		FQuestProgressStep NewStepProgress;
-		NewStepProgress.Completed = false;
-		NewStepProgress.StepDescription = NextQuestStep.StepDescription;
-		NewStepProgress.StepTitle = NextQuestStep.StepTitle;
-		NewStepProgress.QuestID = NextQuestStep.QuestID;
-		NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
-		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
-		NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
-		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
-		NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
-		if (NextQuestStep.FinishingStep)
+		if(!QData.Repeatable)
 		{
-			NewStepProgress.Completed = NextQuestStep.FinishingStep;
-			QData.Finished = true;
-		}
-		QData.CurrentStep = std::move(NewStepProgress);
+			QData.PreviousStep.Add(std::move(QData.CurrentStep));
+			QData.ProgressID = NextQuestStep.QuestSubID;
 
-		QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID);
+			FQuestProgressStep NewStepProgress;
+			NewStepProgress.Completed = false;
+			NewStepProgress.StepDescription = NextQuestStep.StepDescription;
+			NewStepProgress.StepTitle = NextQuestStep.StepTitle;
+			NewStepProgress.QuestID = NextQuestStep.QuestID;
+			NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
+			NewStepProgress.RewardClass = NextQuestStep.RewardClass;
+			NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
+			NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
+			NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
+			if (NextQuestStep.FinishingStep)
+			{
+				NewStepProgress.Completed = NextQuestStep.FinishingStep;
+				QData.Finished = true;
+			}
+			QData.CurrentStep = std::move(NewStepProgress);
+
+			QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID);
+		}
 	}
 
 	OnRep_KnownQuest();
