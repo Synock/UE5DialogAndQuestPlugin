@@ -298,6 +298,9 @@ bool UQuestBearerComponent::IsAtOrPastStep(int64 QuestID, int32 StepID) const
 
 bool UQuestBearerComponent::IsAtStep(int64 QuestID, int32 StepID) const
 {
+	if(!IsQuestKnown(QuestID))
+		return false;
+
 	return GetKnownQuest(QuestID).ProgressID == StepID;
 }
 
