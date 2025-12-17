@@ -1,6 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
-
 #include "UI/DialogWindow.h"
 
 #include "Components/Button.h"
@@ -12,10 +9,24 @@
 #include "UI/DialogFooterWidget.h"
 #include "UI/DialogGiveWidget.h"
 #include "UI/DialogHeaderWidget.h"
+#include "UI/DialogRepairWidget.h"
 #include "UI/DialogTextWidget.h"
 #include "UI/DialogTopicWidget.h"
 #include "UI/DialogTradeWidget.h"
 #include "UI/DialogTrainWidget.h"
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// Validate required widgets are bound
+	if (!Footer || !Header || !TopicList || !TopicText || !WidgetSwitcher)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UDialogWindow: Required widgets not bound. Check Blueprint widget names match BindWidget properties."));
+	}
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -81,6 +92,19 @@ void UDialogWindow::DisplayBankDialogWidget()
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogWindow::DisplayRepairDialogWidget()
+{
+	OnRepair.Broadcast();
+	if (RepairWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(RepairWidgetPointer);
+		TopicList->SetIsEnabled(false);
+		RepairWidgetPointer->DoOnDisplay();
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogWindow::AddTradeWidget(UDialogTradeWidget* TradeWidget)
 {
 	TradeWidgetPointer = TradeWidget;
@@ -113,6 +137,14 @@ void UDialogWindow::AddBankWidget(UDialogBankWidget* BankWidget)
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogWindow::AddRepairWidget(UDialogRepairWidget* RepairWidget)
+{
+	RepairWidgetPointer = RepairWidget;
+	WidgetSwitcher->AddChild(RepairWidgetPointer);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
 {
 	check(InputDialogComponent);
@@ -138,43 +170,16 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
 
-	/*
-	TradeButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayTradeWidget);
-	GiveButton->OnClicked.AddDynamic(this,&UDialogWindow::DisplayGiveWidget);
-*/
-	if (TradeButton && DialogActorInterface->CanTrade())
+	// Configure header buttons based on NPC capabilities
+	if (Header && DialogActorInterface)
 	{
-		TradeButton->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-	if (GiveButton && DialogActorInterface->CanGive())
-	{
-		GiveButton->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		GiveButton->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-	if (TrainButton && DialogActorInterface->CanTrain())
-	{
-		TrainButton->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		TrainButton->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	if (BankButton && DialogActorInterface->CanBank())
-	{
-		BankButton->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		BankButton->SetVisibility(ESlateVisibility::Collapsed);
+		Header->ConfigureButtons(
+			DialogActorInterface->CanTrade(),
+			DialogActorInterface->CanGive(),
+			DialogActorInterface->CanTrain(),
+			DialogActorInterface->CanBank(),
+			DialogActorInterface->CanRepair()
+		);
 	}
 
 	Header->SetRelationValue(RelationValue);
@@ -261,6 +266,7 @@ void UDialogWindow::CloseWindow()
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
 	}
 
+	DisplayMainDialogWidget();
 	OnExit.Broadcast();
 }
 

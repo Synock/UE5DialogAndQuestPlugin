@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -13,6 +11,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTradeButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGiveButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrainButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBankButtonEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRepairButtonEvent);
 
 /**
  * 
@@ -23,74 +22,57 @@ class DIALOGANDQUESTPLUGIN_API UDialogWindow : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(BlueprintReadWrite)
-	UDialogComponent* DialogComponent = nullptr;
+	// Dialog state
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UDialogComponent> DialogComponent = nullptr;
 
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogFooterWidget* Footer = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<AActor> DialogActor = nullptr;
 
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogHeaderWidget* Header = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogTopicWidget* TopicList = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogTextWidget* TopicText = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UButton* TradeButton = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	UButton* GiveButton = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	UButton* TrainButton = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	UButton* BankButton = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UWidgetSwitcher* WidgetSwitcher = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogTradeWidget* TradeWidgetPointer = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogGiveWidget* GiveWidgetPointer = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogTrainWidget* TrainWidgetPointer = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	class UDialogBankWidget* BankWidgetPointer = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
-	AActor* DialogActor = nullptr;
-
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	float RelationValue = 0.5f;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	FString RelationString;
+
+	// Widget bindings - these must match widget names in the Blueprint
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogFooterWidget> Footer = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogHeaderWidget> Header = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogTopicWidget> TopicList = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogTextWidget> TopicText = nullptr;
+
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<class UWidgetSwitcher> WidgetSwitcher = nullptr;
+
+	// Optional widget bindings - dynamically added child widgets
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogTradeWidget> TradeWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogGiveWidget> GiveWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogTrainWidget> TrainWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogBankWidget> BankWidgetPointer = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
+	TObjectPtr<class UDialogRepairWidget> RepairWidgetPointer = nullptr;
+
+	// UUserWidget interface
+	virtual void NativeConstruct() override;
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void PostInitRelation();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayGiveWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayTradeWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayMainDialogWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayTrainDialogWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayBankDialogWidget();
 
 public:
 
@@ -105,6 +87,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AddBankWidget(UDialogBankWidget* BankWidget);
+
+	UFUNCTION(BlueprintCallable)
+	void AddRepairWidget(UDialogRepairWidget* RepairWidget);
 
 	UFUNCTION(BlueprintCallable)
 	const UDialogComponent* GetDialogComponent() const { return DialogComponent; }
@@ -147,4 +132,25 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnBankButtonEvent OnBank;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnRepairButtonEvent OnRepair;
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayGiveWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayTradeWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayMainDialogWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayTrainDialogWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayBankDialogWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayRepairDialogWidget();
 };

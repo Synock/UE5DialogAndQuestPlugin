@@ -38,6 +38,8 @@ public:
 
 	virtual bool CanBank() const;
 
+	virtual bool CanRepair() const;
+
 	virtual FText GetCharacterNameForDialog() const = 0;
 
 	virtual float GetMaxInteractionDistance() const;
