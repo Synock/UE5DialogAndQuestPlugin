@@ -1,23 +1,28 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
+	"Version": 2,
+	"VersionName": "2.0",
 	"FriendlyName": "DialogAndQuestPlugin",
-	"Description": "",
-	"Category": "Other",
+	"Description": "Keyword-based dialog and quest state machine system with voiceover support.",
+	"Category": "Gameplay",
 	"CreatedBy": "Maximilien (Synock) Guislain",
 	"CreatedByURL": "https://github.com/Synock",
 	"DocsURL": "",
 	"MarketplaceURL": "",
 	"SupportURL": "",
 	"CanContainContent": true,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Modules": [
 		{
 			"Name": "DialogAndQuestPlugin",
 			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "DialogAndQuestPluginEditor",
+			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
 	]

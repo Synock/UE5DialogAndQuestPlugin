@@ -1,11 +1,62 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
+#include "Sound/SoundBase.h"
 #include "UObject/Object.h"
 #include "QuestData.generated.h"
+
+/**
+ * QuestData.h — Quest data structures, state machine, and step definitions.
+ *
+ * ## Quest State Machine
+ *
+ *   Unknown ──MentionQuest()──► Mentioned ──AuthorityAddQuest()──► Accepted
+ *                                   │                                 │
+ *   Unknown ──AuthorityAddQuest()───┘──────────────────────────►      │
+ *                                                                     │
+ *                               ┌──────── ProgressQuest() ───────────┘
+ *                               │              (step by step)
+ *                               ▼
+ *                           Accepted ──AchieveQuest()──► Achieved ──CompleteQuest()──► Completed
+ *                               │                            │
+ *                               └──BotchQuest()──► Botched ◄─┘
+ *
+ * - **Unknown**: Player has never encountered this quest.
+ * - **Mentioned**: Player heard about the quest (journal shows a rumor). Cannot progress steps.
+ * - **Accepted**: Quest is active. Steps are tracked. This is the main "in progress" state.
+ * - **Achieved**: All objectives done, awaiting turn-in to the quest giver.
+ * - **Completed**: Quest turned in successfully. Terminal state.
+ * - **Botched**: Quest failed irrecoverably. Terminal state.
+ *
+ * ## Step Progression
+ *
+ * Each FQuestMetaData contains an ordered array of FQuestStep. The player's current step
+ * is tracked in FQuestProgressData::ProgressID (matches FQuestStep::QuestSubID).
+ *
+ * Progression is driven by TryProgressQuest() → QuestMainComponent validates against the
+ * QuestGiverComponent → QuestBearerComponent::ProgressQuest() advances the step.
+ *
+ * ## Key Classes
+ *
+ * | Class                    | Role                                                     |
+ * |--------------------------|----------------------------------------------------------|
+ * | FQuestMetaData           | Static quest definition (title, steps, botch conditions) |
+ * | FQuestStep               | Single quest objective definition                        |
+ * | FQuestProgressData       | Per-player quest progress (state + current step)         |
+ * | UQuestMainComponent      | Server-side quest registry (GameMode component)          |
+ * | UQuestBearerComponent    | Per-player quest state (PlayerController component)      |
+ * | UQuestGiverComponent     | NPC-side: which quest steps this NPC can validate        |
+ * | IQuestBearerInterface    | Interface for accessing quest state on PlayerController  |
+ *
+ * ## Interaction with Dialog
+ *
+ * Dialog topics can be conditionally shown based on quest state/step via
+ * FDialogTopicCondition (see DialogData.h). When a topic is clicked, FDialogConsequence
+ * can transition quest state or mention new quests. The dialog window refreshes topic
+ * visibility after every click, so quest-gated topics appear/disappear in real time.
+ */
 
 UENUM(BlueprintType)
 enum struct EQuestStepConditionType: uint8
@@ -17,10 +68,49 @@ enum struct EQuestStepConditionType: uint8
 	GreaterEqual
 };
 
-UCLASS(MinimalAPI, BlueprintType, Blueprintable)
+///@brief Quest state machine following a Mentioned→Accepted→Achieved→Completed flow with a Botched dead-end.
+UENUM(BlueprintType)
+enum class EQuestState : uint8
+{
+	Unknown    UMETA(DisplayName = "Unknown"),
+	Mentioned  UMETA(DisplayName = "Mentioned"),
+	Accepted   UMETA(DisplayName = "Accepted"),
+	Achieved   UMETA(DisplayName = "Achieved"),
+	Completed  UMETA(DisplayName = "Completed"),
+	Botched    UMETA(DisplayName = "Botched")
+};
+
+///@brief Defines how a quest step connects to subsequent steps.
+UENUM(BlueprintType)
+enum class EQuestStepType : uint8
+{
+	Linear   UMETA(DisplayName = "Linear"),
+	Branch   UMETA(DisplayName = "Branch"),
+	Parallel UMETA(DisplayName = "Parallel"),
+	Optional UMETA(DisplayName = "Optional")
+};
+
+///@brief Concrete quest reward data. Subclass for game-specific rewards.
+UCLASS(MinimalAPI, BlueprintType, Blueprintable, EditInlineNew)
 class UQuestRewardData : public UObject
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	float XPReward = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	float CoinReward = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	TArray<int32> ItemRewards;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	FGameplayTag FactionAdjustmentTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	float FactionAdjustmentValue = 0.f;
 };
 
 ///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang
@@ -29,32 +119,69 @@ struct FQuestStep : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	int64 QuestID = 0;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	int32 QuestSubID = 0;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString StepTitle;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText StepTitle;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString StepDescription;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText StepDescription;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	bool FinishingStep = false;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	TSubclassOf<UQuestRewardData> RewardClass;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements")
 	TArray<int32> NecessaryItems;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements")
 	float NecessaryCoins = 0.f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString ItemTurnInDialog;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText ItemTurnInDialog;
+
+	/// Step type for branching/parallel support. Linear = next step in array order.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Flow")
+	EQuestStepType StepType = EQuestStepType::Linear;
+
+	/// Explicit next step IDs. If empty and StepType == Linear, next step is the following array element.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Flow",
+		meta = (EditCondition = "StepType != EQuestStepType::Linear"))
+	TArray<int32> NextStepIDs;
+
+	/// Voiceover sound to play when this step's turn-in dialog is displayed.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Voiceover")
+	TSoftObjectPtr<USoundBase> VoiceoverCue;
+
+	/// External audio middleware event name (Wwise/FMOD).
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Voiceover")
+	FName VoiceoverEventName;
+
+	/// Manual subtitle duration override (seconds). 0 = use sound asset duration.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Voiceover",
+		meta = (ClampMin = "0.0"))
+	float VoiceoverDuration = 0.f;
+};
+
+///@brief Condition that can botch a quest (abstract concept — game implements the check).
+USTRUCT(BlueprintType)
+struct FQuestBotchCondition : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/// GameplayTag identifying the botch trigger type (e.g. "Quest.Botch.NPCDead", "Quest.Botch.ItemDestroyed").
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Botch")
+	FGameplayTag BotchTag;
+
+	/// Description shown in the journal when the quest is botched by this condition.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Botch")
+	FText BotchDescription;
 };
 
 ///@brief Represent the complete quest info
@@ -63,17 +190,29 @@ struct FQuestMetaData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	int64 QuestID = 0;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FString QuestTitle;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText QuestTitle;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	/// Full quest description shown once the quest is accepted.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText QuestDescription;
+
+	/// Rumor/mention text shown in the journal when the quest is only "Mentioned" (not yet accepted).
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	FText MentionedDescription;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	bool Repeatable = false;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	TArray<FQuestStep> Steps;
+
+	/// Conditions that can botch (fail) this quest irrecoverably.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch")
+	TArray<FQuestBotchCondition> BotchConditions;
 };
 
 ///@brief This is a list of objectives that can be validated by a quest giver
@@ -89,7 +228,7 @@ struct FQuestValidatableSteps : public FTableRowBase
 	TArray<int32> Steps;
 };
 
-///@brief Represent a quest objective, eg, go to the bakery, talk to somebody, bring 10 wolf fang and its completion state
+///@brief Represent a quest objective and its completion state (player progress)
 USTRUCT(BlueprintType)
 struct FQuestProgressStep : public FQuestStep
 {
@@ -102,7 +241,7 @@ struct FQuestProgressStep : public FQuestStep
 	bool Completed = false;
 };
 
-///@brief This is a quest from the player perspective with information on completion
+///@brief Quest from the player perspective with state machine and progress tracking
 USTRUCT(BlueprintType)
 struct FQuestProgressData
 {
@@ -115,7 +254,7 @@ struct FQuestProgressData
 	int32 ProgressID = 0;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool Finished = false;
+	EQuestState State = EQuestState::Unknown;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool Repeatable = false;
@@ -124,15 +263,28 @@ struct FQuestProgressData
 	FQuestProgressStep CurrentStep;
 
 	UPROPERTY(BlueprintReadOnly)
-	FString QuestTitle;
+	FText QuestTitle;
+
+	/// Rumor text (only relevant when State == Mentioned).
+	UPROPERTY(BlueprintReadOnly)
+	FText MentionedDescription;
 
 	///steps already done by the player
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FQuestProgressStep> PreviousStep;
+
+	/// True if the quest is in a terminal state (Completed or Botched).
+	bool IsTerminal() const { return State == EQuestState::Completed || State == EQuestState::Botched; }
+
+	/// True if the quest is actively being pursued (Accepted or Achieved).
+	bool IsActive() const { return State == EQuestState::Accepted || State == EQuestState::Achieved; }
+
+	/// Backward compat helper.
+	bool IsFinished() const { return State == EQuestState::Completed; }
 };
 
 
-///@brief Global quest data
+///@brief Global quest data for journal title display
 UCLASS(BlueprintType)
 class DIALOGANDQUESTPLUGIN_API UQuestJournalTitleData : public UObject
 {
@@ -146,7 +298,7 @@ public:
 	class UQuestJournalWindow* Parent = nullptr;
 };
 
-///@brief Quest step entry
+///@brief Quest step entry for journal step display
 UCLASS(BlueprintType)
 class DIALOGANDQUESTPLUGIN_API UQuestEntryData : public UObject
 {

@@ -1,32 +1,89 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Dialog/DialogData.h"
 
 #include "Interfaces/DialogInterface.h"
+#include "Interfaces/DialogSkillCheckInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
-#include "Interfaces/QuestGiverInterface.h"
+#include "Misc/DialogAndQuestPluginHelper.h"
 
 bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APlayerController* Controller) const
 {
-	bool StandardReturn = false;
-	if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor); DialogInterfaceActor)
-		StandardReturn = DialogInterfaceActor->GetRelation(Controller->GetPawn()) >= MinimumRelation;
-
-	if (QuestId != 0)
-	{
-		if (const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller))
-		{
-			if (const IQuestGiverInterface* QuestActor = Cast<IQuestGiverInterface>(DialogActor))
-			{
-				const bool QuestCondition = QuestBearer->CanDisplay(QuestId, MinimumStepID, StepCondition);
-
-				return QuestCondition && StandardReturn;
-			}
-		}
-
+	if (!Controller)
 		return false;
+
+	// Relation check
+	bool bRelationOK = true;
+	if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor))
+	{
+		if (Controller->GetPawn())
+			bRelationOK = DialogInterfaceActor->GetRelation(Controller->GetPawn()) >= MinimumRelation;
+		else
+			bRelationOK = false;
 	}
 
-	return StandardReturn;
+	// Skill check (game-agnostic via interface)
+	if (SkillCheckTag.IsValid())
+	{
+		if (const IDialogSkillCheckInterface* SkillCheck = Cast<IDialogSkillCheckInterface>(Controller))
+		{
+			if (SkillCheck->EvaluateSkillCheck(SkillCheckTag, Controller->GetPawn()) < MinimumSkillValue)
+				return false;
+		}
+		else
+		{
+			// Controller doesn't implement skill checks — fail the condition
+			return false;
+		}
+	}
+
+	// Required items check (game-agnostic via interface)
+	if (!RequiredItems.IsEmpty())
+	{
+		if (const IDialogSkillCheckInterface* SkillCheck = Cast<IDialogSkillCheckInterface>(Controller))
+		{
+			if (!SkillCheck->HasRequiredItems(RequiredItems, Controller->GetPawn()))
+				return false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// Quest condition
+	if (QuestId != 0)
+	{
+		const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller);
+		if (!QuestBearer)
+			return false;
+
+		const bool bHasStateFilter = RequiredQuestState != EQuestState::Unknown;
+		const bool bHasStepFilter  = MinimumStepID != 0;
+
+		// If the quest is not known at all:
+		// - A state filter can only pass for Unknown (which means "no filter")
+		// - A step filter always fails (CanDisplay returns false for unknown quests)
+		if (!QuestBearer->IsQuestKnown(QuestId))
+			return false;
+
+		// State-based check
+		if (bHasStateFilter)
+		{
+			const FQuestProgressData& Progress = QuestBearer->GetKnownQuest(QuestId);
+			if (Progress.State != RequiredQuestState)
+				return false;
+		}
+
+		// Step-based check (combined with state when both are set)
+		if (bHasStepFilter)
+		{
+			if (!QuestBearer->CanDisplay(QuestId, MinimumStepID, StepCondition))
+				return false;
+		}
+
+		// If neither filter was set (QuestId != 0 but no state/step), just require quest to be known
+		return bRelationOK;
+	}
+
+	return bRelationOK;
 }

@@ -1,10 +1,9 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Components/DialogComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "Interfaces/DialogGameModeInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/DialogAndQuestPluginHelper.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -52,8 +51,14 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 			GoodGreeting = DialogComponent->GetGoodGreeting(ID);
 			BadGreeting = DialogComponent->GetBadGreeting(ID);
 			GreetingLimit = DialogComponent->GetGreetingRelationLimit(ID);
+			GoodGreetingVoiceover = DialogComponent->GetGoodGreetingVoiceover(ID);
+			BadGreetingVoiceover = DialogComponent->GetBadGreetingVoiceover(ID);
+			bDialogInitialized = true;
 		}
 	}
+
+	if (!bDialogInitialized)
+		return;
 
 	for (auto& DialogData : FullDialog)
 	{
@@ -65,17 +70,35 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-const FDialogTopicStruct& UDialogComponent::GetDialogTopic(int64 ID) const
+const FDialogTopicStruct* UDialogComponent::GetDialogTopicSafe(int64 ID) const
 {
-	return DialogTopic[ID];
+	if (const FDialogTopicStruct* Found = DialogTopic.Find(ID))
+		return Found;
+
+	UDialogAndQuestPluginHelper::Warning(FString::Printf(TEXT("Dialog topic ID %lld not found"), ID));
+	return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+FDialogTopicStruct UDialogComponent::GetDialogTopicByID(int64 ID, bool& bFound) const
+{
+	if (const FDialogTopicStruct* Found = DialogTopic.Find(ID))
+	{
+		bFound = true;
+		return *Found;
+	}
+
+	bFound = false;
+	return {};
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 int64 UDialogComponent::GetDialogTopicID(const FString& ID) const
 {
-	if (DialogTopicLUT.Contains(ID))
-		return *DialogTopicLUT.Find(ID);
+	if (const int64* Found = DialogTopicLUT.Find(ID))
+		return *Found;
 
 	return 0;
 }
@@ -87,61 +110,68 @@ FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, cons
 {
 	FString ActualOut;
 	TArray<FString> Out;
-	OriginalString.ParseIntoArray(Out,TEXT(" "), true);
+	OriginalString.ParseIntoArray(Out, TEXT(" "), true);
 
 	for (const auto& Word : Out)
 	{
+		if (Word.IsEmpty())
+		{
+			ActualOut += TEXT(" ");
+			continue;
+		}
+
 		FString LocalWord = Word;
+		TCHAR SupChar = 0;
 
-		char SupChar = 'y';
-
-		if (Word[Word.Len() - 1] == '.')
+		const TCHAR LastChar = Word[Word.Len() - 1];
+		if (LastChar == '.' || LastChar == ',' || LastChar == '!' || LastChar == ':' || LastChar == '?')
 		{
-			SupChar = '.';
-			LocalWord = Word.Mid(0, Word.Len() - 1);
-		}
-		else if (Word[Word.Len() - 1] == ',')
-		{
-			SupChar = ',';
-			LocalWord = Word.Mid(0, Word.Len() - 1);
-		}
-		else if (Word[Word.Len() - 1] == '!')
-		{
-			SupChar = '!';
-			LocalWord = Word.Mid(0, Word.Len() - 1);
-		}
-		else if (Word[Word.Len() - 1] == ':')
-		{
-			SupChar = ':';
-			LocalWord = Word.Mid(0, Word.Len() - 1);
-		}
-		else if (Word[Word.Len() - 1] == '?')
-		{
-			SupChar = '?';
+			SupChar = LastChar;
 			LocalWord = Word.Mid(0, Word.Len() - 1);
 		}
 
-		if (DialogTopicLUT.Contains(LocalWord) && DialogTopic.Find(*DialogTopicLUT.Find(LocalWord))->TopicCondition.
-		                                                      VerifyCondition(DialogActor, Controller))
+		if (!LocalWord.IsEmpty() && DialogTopicLUT.Contains(LocalWord))
 		{
-			ActualOut += FString("<DialogLink id=\"") + LocalWord + FString("\">") + LocalWord + FString("</>");
-			if (SupChar != 'y')
-				ActualOut += SupChar;
+			const int64* TopicIDPtr = DialogTopicLUT.Find(LocalWord);
+			const FDialogTopicStruct* TopicPtr = TopicIDPtr ? DialogTopic.Find(*TopicIDPtr) : nullptr;
+
+			if (TopicPtr && TopicPtr->TopicCondition.VerifyCondition(DialogActor, Controller))
+			{
+				ActualOut += FString::Printf(TEXT("<DialogLink id=\"%s\">%s</>"), *LocalWord, *LocalWord);
+				if (SupChar != 0)
+					ActualOut += SupChar;
+			}
+			else
+			{
+				ActualOut += Word;
+			}
 		}
 		else
 		{
 			ActualOut += Word;
 		}
 
-
-		ActualOut+= " ";
+		ActualOut += TEXT(" ");
 	}
 	return ActualOut;
 }
 
-bool UDialogComponent::IsValid() const
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogComponent::ConsumeTopicByID(int64 TopicID)
 {
-	return GoodGreeting != "Error";
+	DialogTopic.Remove(TopicID);
+
+	// Also remove from replicated array and LUT
+	for (int32 i = DialogTopicData.Num() - 1; i >= 0; --i)
+	{
+		if (DialogTopicData[i].Id == TopicID)
+		{
+			DialogTopicLUT.Remove(DialogTopicData[i].Topic);
+			DialogTopicData.RemoveAt(i);
+			break;
+		}
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -154,4 +184,5 @@ void UDialogComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UDialogComponent, GoodGreeting);
 	DOREPLIFETIME(UDialogComponent, BadGreeting);
 	DOREPLIFETIME(UDialogComponent, GreetingLimit);
+	DOREPLIFETIME(UDialogComponent, bDialogInitialized);
 }

@@ -2,6 +2,7 @@
 
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
@@ -21,7 +22,6 @@ void UDialogWindow::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Validate required widgets are bound
 	if (!Footer || !Header || !TopicList || !TopicText || !WidgetSwitcher)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UDialogWindow: Required widgets not bound. Check Blueprint widget names match BindWidget properties."));
@@ -151,7 +151,6 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 
 	DialogActor = ActorDialog;
 
-
 	IDialogInterface* DialogActorInterface = Cast<IDialogInterface>(DialogActor);
 	if (DialogActor && DialogActorInterface)
 	{
@@ -180,22 +179,22 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 			DialogActorInterface->CanBank(),
 			DialogActorInterface->CanRepair()
 		);
+
+		Header->SetRelationValue(RelationValue);
+		Header->SetRelationString(RelationString);
+		Header->SetDialogName(DialogActorInterface->GetCharacterNameForDialog().ToString());
 	}
 
-	Header->SetRelationValue(RelationValue);
-	Header->SetRelationString(RelationString);
-
-	Header->SetDialogName(DialogActorInterface->GetCharacterNameForDialog().ToString());
 	TopicText->ClearList();
 	TopicList->UpdateTopicData();
 
 	if (RelationValue >= DialogComponent->GetGreetingLimit())
 	{
-		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting());
+		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting().ToString());
 	}
 	else
 	{
-		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting());
+		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting().ToString());
 	}
 
 
@@ -218,13 +217,48 @@ void UDialogWindow::DisplayJournalUpdate()
 
 void UDialogWindow::DisplayDialogTopic(int64 ID)
 {
-	TopicText->AddTopicText(ID);
-	//also try to update possible quest advancement here?
+	const FDialogTopicStruct* TopicPtr = DialogComponent->GetDialogTopicSafe(ID);
+	if (!TopicPtr)
+		return;
 
+	// Copy by value — ConsumeTopicByID below may remove the map entry.
+	const FDialogTopicStruct Topic = *TopicPtr;
+	TopicPtr = nullptr;
+
+	TopicText->AddTopicText(ID);
+
+	// Process consequences (new system)
+	if (Topic.Consequence.HasConsequence())
+	{
+		if (IDialogConsequenceInterface* ConsequenceHandler = Cast<IDialogConsequenceInterface>(GetOwningPlayer()))
+		{
+			ConsequenceHandler->HandleDialogConsequence(Topic.Consequence, DialogActor);
+		}
+	}
+
+	// Consume-on-use topics
+	if (Topic.TopicCondition.bConsumeOnUse)
+	{
+		// Note: we must access the component mutably for consumption
+		if (UDialogComponent* MutableDialog = const_cast<UDialogComponent*>(DialogComponent.Get()))
+		{
+			MutableDialog->ConsumeTopicByID(ID);
+		}
+	}
+
+	// Fire voiceover if available
+	if (!Topic.VoiceoverCue.IsNull())
+	{
+		USoundBase* Sound = Topic.VoiceoverCue.LoadSynchronous();
+		if (Sound && DialogComponent)
+		{
+			const_cast<UDialogComponent*>(DialogComponent.Get())->OnVoiceoverRequested.Broadcast(Sound, Topic.VoiceoverDuration);
+		}
+	}
+
+	// Legacy quest relation (backward compat with existing DataTables)
 	if (IQuestGiverInterface* GiverInterface = Cast<IQuestGiverInterface>(DialogActor))
 	{
-		const FDialogTopicStruct& Topic = DialogComponent->GetDialogTopic(ID);
-
 		if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 		{
 			if (Topic.QuestRelation.QuestID != 0)
@@ -240,6 +274,8 @@ void UDialogWindow::DisplayDialogTopic(int64 ID)
 			}
 		}
 	}
+
+	RefreshDialogOptions();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

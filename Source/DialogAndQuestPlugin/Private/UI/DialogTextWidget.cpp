@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "UI/DialogTextWidget.h"
 
@@ -9,12 +7,12 @@ FString UDialogTextWidget::ProcessText(const FString& InputString) const
 {
 	FString ScriptedText = InputString;
 
-	if(const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
+	if (const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
 	{
-		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText,GetWorld());
+		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText, GetWorld());
 	}
 
-	return DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(),GetOwningPlayer());;
+	return DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(), GetOwningPlayer());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -39,11 +37,14 @@ void UDialogTextWidget::InitDialog(UDialogWindow* InputParentDialog)
 
 void UDialogTextWidget::AddTopicText(int64 TopicID)
 {
-	const FDialogTopicStruct& Topic = DialogComponent->GetDialogTopic(TopicID);
+	const FDialogTopicStruct* Topic = DialogComponent->GetDialogTopicSafe(TopicID);
+	if (!Topic)
+		return;
+
 	FDialogTextData TextData;
-	TextData.Id = Topic.Id;
-	TextData.TopicName = Topic.Topic;
-	TextData.TopicText = ProcessText(Topic.TopicText);
+	TextData.Id = Topic->Id;
+	TextData.TopicName = Topic->Topic;
+	TextData.TopicText = ProcessText(Topic->TopicText.ToString());
 	AddTopicData(TextData);
 }
 
@@ -51,12 +52,14 @@ void UDialogTextWidget::AddTopicText(int64 TopicID)
 
 void UDialogTextWidget::ReprocessTopicLinks()
 {
-	for(auto& DialogTextChunk : ListViewWidget->GetDisplayedEntryWidgets())
+	if (!ListViewWidget)
+		return;
+
+	for (auto& DialogTextChunk : ListViewWidget->GetDisplayedEntryWidgets())
 	{
-		if(UDialogTextChunkWidget* DialogChunkWidget = Cast<UDialogTextChunkWidget>(DialogTextChunk))
+		if (UDialogTextChunkWidget* DialogChunkWidget = Cast<UDialogTextChunkWidget>(DialogTextChunk))
 		{
 			const FText& CurrentText = DialogChunkWidget->GetTextData();
-
 			FString NewText = ProcessText(CurrentText.ToString());
 			DialogChunkWidget->SetTextData(FText::FromString(NewText));
 		}

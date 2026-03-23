@@ -14,7 +14,20 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBankButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRepairButtonEvent);
 
 /**
- * 
+ * Main dialog window widget. Orchestrates NPC conversation flow.
+ *
+ * ## Topic Refresh Cycle (quest-driven visibility)
+ *
+ * Topics are re-evaluated at these points:
+ *   1. InitDialogWindow() → initial topic list build
+ *   2. DisplayDialogTopic() → after consequence/quest processing → RefreshDialogOptions()
+ *   3. DisplayJournalUpdate() → on KnownQuestDispatcher (quest state replicated) → RefreshDialogOptions()
+ *
+ * RefreshDialogOptions() calls TopicList->UpdateTopicData() which re-runs
+ * FDialogTopicCondition::VerifyCondition() on every topic. This means:
+ *   - A topic gated on quest step 2 appears the moment the player reaches step 2
+ *   - A topic with bConsumeOnUse disappears after first click
+ *   - Hyperlinks in response text also refresh (quest-locked keywords become clickable)
  */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogWindow : public UUserWidget

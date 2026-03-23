@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,30 @@
 #include "Dialog/DialogData.h"
 #include "DialogComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnVoiceoverRequested, USoundBase*, SoundCue, float, Duration);
 
+/**
+ * Per-NPC dialog data component. Holds the full set of topics this NPC can discuss.
+ *
+ * ## Lifecycle
+ * 1. On server: GameMode calls InitDialogFromID(MetaBundleID) which loads all topics
+ *    from UDialogMainComponent (the server-side registry).
+ * 2. DialogTopicData replicates to the owning client.
+ * 3. On client: OnRep_DialogData rebuilds the local lookup maps.
+ *
+ * ## Topic Filtering
+ * All topics are stored unconditionally in this component. Filtering happens at display
+ * time: UDialogTopicWidget::UpdateTopicData() iterates every topic and calls
+ * FDialogTopicCondition::VerifyCondition() to decide visibility. This is re-run after
+ * every topic click via UDialogWindow::RefreshDialogOptions(), so quest-gated topics
+ * dynamically appear/disappear during conversation.
+ *
+ * ## Hyperlink Parsing
+ * ParseTextHyperlink() scans NPC response text for words matching topic keywords and
+ * wraps them in clickable hyperlinks — but only if that topic's condition passes.
+ * This means hyperlinks also respect quest state: a keyword for a quest-locked topic
+ * won't be clickable until the quest reaches the required state/step.
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DIALOGANDQUESTPLUGIN_API UDialogComponent : public UActorComponent
 {
@@ -41,13 +62,24 @@ protected:
 	FString DialogName;
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
-	FString GoodGreeting;
+	FText GoodGreeting;
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
-	FString BadGreeting;
+	FText BadGreeting;
 
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	float GreetingLimit = 0.f;
+
+	/// Tracks whether dialog has been successfully initialized (replaces magic-string check).
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bDialogInitialized = false;
+
+	/// Voiceover cues for greetings.
+	UPROPERTY(BlueprintReadOnly)
+	TSoftObjectPtr<USoundBase> GoodGreetingVoiceover;
+
+	UPROPERTY(BlueprintReadOnly)
+	TSoftObjectPtr<USoundBase> BadGreetingVoiceover;
 
 	UFUNCTION()
 	virtual void OnRep_DialogData();
@@ -56,8 +88,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitDialogFromID(int64 ID);
 
-	UFUNCTION(BlueprintCallable)
-	const FDialogTopicStruct& GetDialogTopic(int64 ID) const;
+	/// C++-only lookup — returns nullptr when the topic ID is not found.
+	const FDialogTopicStruct* GetDialogTopicSafe(int64 ID) const;
+
+	/// Blueprint-friendly lookup — returns the topic by value; bFound is false when the ID is missing.
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
+	FDialogTopicStruct GetDialogTopicByID(int64 ID, bool& bFound) const;
 
 	UFUNCTION(BlueprintCallable)
 	int64 GetDialogTopicID(const FString& ID) const;
@@ -66,14 +102,28 @@ public:
 	FString ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor, const APlayerController* Controller) const;
 
 	UFUNCTION(BlueprintCallable)
-	const FString& GetGoodGreeting() const { return GoodGreeting; }
+	const FText& GetGoodGreeting() const { return GoodGreeting; }
 
 	UFUNCTION(BlueprintCallable)
-	const FString& GetBadGreeting() const { return BadGreeting; }
+	const FText& GetBadGreeting() const { return BadGreeting; }
 
 	UFUNCTION(BlueprintCallable)
 	float GetGreetingLimit() const { return GreetingLimit; }
 
 	UFUNCTION(BlueprintCallable)
-	bool IsValid() const;
+	bool IsValid() const { return bDialogInitialized; }
+
+	UFUNCTION(BlueprintCallable)
+	TSoftObjectPtr<USoundBase> GetGoodGreetingVoiceover() const { return GoodGreetingVoiceover; }
+
+	UFUNCTION(BlueprintCallable)
+	TSoftObjectPtr<USoundBase> GetBadGreetingVoiceover() const { return BadGreetingVoiceover; }
+
+	/// Fired when a topic with a voiceover cue is displayed.
+	UPROPERTY(BlueprintAssignable)
+	FOnVoiceoverRequested OnVoiceoverRequested;
+
+	/// Mark a topic as consumed (for bConsumeOnUse topics).
+	UFUNCTION(BlueprintCallable)
+	void ConsumeTopicByID(int64 TopicID);
 };

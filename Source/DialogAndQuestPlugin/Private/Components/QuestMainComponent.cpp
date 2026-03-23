@@ -1,15 +1,13 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Components/QuestMainComponent.h"
 
+#include "Quest/QuestAsset.h"
 #include "Interfaces/DialogDisplayInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
 #include "Misc/DialogAndQuestPluginHelper.h"
 
 
-// Sets default values for this component's properties
 UQuestMainComponent::UQuestMainComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -17,7 +15,6 @@ UQuestMainComponent::UQuestMainComponent()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-// Called when the game starts
 void UQuestMainComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -27,10 +24,10 @@ void UQuestMainComponent::BeginPlay()
 
 uint32 UQuestMainComponent::FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep)
 {
-	if (CurrentStep == -1)
-		return 0;
+	if (CurrentStep == -1 && !QuestData.Steps.IsEmpty())
+		return QuestData.Steps[0].QuestSubID;
 
-	for (size_t StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
+	for (int32 StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
 	{
 		if (QuestData.Steps[StepID].QuestSubID == CurrentStep)
 		{
@@ -45,7 +42,7 @@ uint32 UQuestMainComponent::FindNextStepID(const FQuestMetaData& QuestData, int3
 
 const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep)
 {
-	for (size_t StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
+	for (int32 StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
 	{
 		if (QuestData.Steps[StepID].QuestSubID == CurrentStep)
 		{
@@ -70,6 +67,9 @@ void UQuestMainComponent::AddQuest(const FQuestMetaData& QuestData)
 
 void UQuestMainComponent::AddQuestFromDataTable(UDataTable* DataTable)
 {
+	if (!DataTable)
+		return;
+
 	TArray<FName> RowNames = DataTable->GetRowNames();
 	for (const auto& Row : RowNames)
 	{
@@ -80,9 +80,25 @@ void UQuestMainComponent::AddQuestFromDataTable(UDataTable* DataTable)
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UQuestMainComponent::AddQuestFromAsset(UQuestAsset* QuestAsset)
+{
+	if (!QuestAsset)
+		return;
+
+	AddQuest(QuestAsset->ToQuestMetaData());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 const FQuestMetaData& UQuestMainComponent::GetQuestData(int64 QuestID) const
 {
-	return QuestList.FindChecked(QuestID);
+	if (const FQuestMetaData* Found = QuestList.Find(QuestID))
+		return *Found;
+
+	UDialogAndQuestPluginHelper::Warning(FString::Printf(TEXT("Quest ID %lld not found in quest registry"), QuestID));
+
+	static const FQuestMetaData EmptyQuest;
+	return EmptyQuest;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -92,8 +108,7 @@ void UQuestMainComponent::ForceAddPlayerQuest(APlayerController* PlayerControlle
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
 
-	if (IQuestBearerInterface* QuestBearerInterface = Cast<IQuestBearerInterface>(PlayerController);
-		QuestBearerInterface != nullptr)
+	if (IQuestBearerInterface* QuestBearerInterface = Cast<IQuestBearerInterface>(PlayerController))
 	{
 		QuestBearerInterface->GetQuestBearerComponent()->AuthorityAddQuest(QuestID);
 	}
@@ -118,11 +133,18 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 	}
 
 	const FQuestMetaData& CurrentQuest = GetQuestData(QuestID);
+	if (CurrentQuest.QuestID == 0)
+		return false;
 
 	int32 CurrentStepID = -1;
 	if (QuestBearerInterface->IsQuestKnown(QuestID))
 	{
 		const FQuestProgressData& CurrentQuestProgress = QuestBearerInterface->GetKnownQuest(QuestID);
+
+		// Don't progress terminal quests
+		if (CurrentQuestProgress.IsTerminal())
+			return false;
+
 		CurrentStepID = CurrentQuestProgress.CurrentStep.QuestSubID;
 	}
 
@@ -138,21 +160,18 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 
 		UDialogAndQuestPluginHelper::Log("Progressing Quest id : " + FString::FormatAsNumber(CurrentQuest.QuestID) + " step : " + FString::FormatAsNumber(CurrentStepID));
 
-		const FString& ProgressDialog = QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.
-																	   ItemTurnInDialog;
+		const FText& ProgressDialog = QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.ItemTurnInDialog;
 		if (!ProgressDialog.IsEmpty())
 		{
-			IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer);
-			DialogInterface->ForceDisplayTextInDialog(ProgressDialog);
+			if (IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer))
+				DialogInterface->ForceDisplayTextInDialog(ProgressDialog.ToString());
 		}
 
 		QuestBearerInterface->ProgressQuest(CurrentQuest, FindNextStep(CurrentQuest, CurrentStepID));
-
 		return true;
-
 	}
 
-	FString WarningMessage = "Tried to validate an impossible quest state QID: " + FString::FormatAsNumber(CurrentQuest.QuestID) + " Current step : " +  FString::FormatAsNumber(CurrentStepID);
+	FString WarningMessage = "Tried to validate an impossible quest state QID: " + FString::FormatAsNumber(CurrentQuest.QuestID) + " Current step : " + FString::FormatAsNumber(CurrentStepID);
 	UDialogAndQuestPluginHelper::Warning(WarningMessage);
 	return false;
 

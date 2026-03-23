@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "UI/QuestJournal/QuestJournalListWidget.h"
 #include "UI/QuestJournal/QuestJournalWindow.h"

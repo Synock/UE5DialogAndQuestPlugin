@@ -1,7 +1,6 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Components/DialogMainComponent.h"
+#include "Dialog/DialogAsset.h"
 
 
 // Sets default values for this component's properties
@@ -27,6 +26,9 @@ void UDialogMainComponent::BeginPlay()
 
 void UDialogMainComponent::AddTopicFromDataTable(UDataTable* DataTable)
 {
+	if (!DataTable)
+		return;
+
 	TArray<FName> RowNames = DataTable->GetRowNames();
 	for(auto& Row : RowNames)
 	{
@@ -40,6 +42,9 @@ void UDialogMainComponent::AddTopicFromDataTable(UDataTable* DataTable)
 
 void UDialogMainComponent::AddBundleFromDataTable(UDataTable* DataTable)
 {
+	if (!DataTable)
+		return;
+
 	TArray<FName> RowNames = DataTable->GetRowNames();
 	for(auto& Row : RowNames)
 	{
@@ -53,6 +58,9 @@ void UDialogMainComponent::AddBundleFromDataTable(UDataTable* DataTable)
 
 void UDialogMainComponent::AddMetaBundleFromDataTable(UDataTable* DataTable)
 {
+	if (!DataTable)
+		return;
+
 	TArray<FName> RowNames = DataTable->GetRowNames();
 	for(auto& Row : RowNames)
 	{
@@ -60,6 +68,39 @@ void UDialogMainComponent::AddMetaBundleFromDataTable(UDataTable* DataTable)
 		if(Item)
 			AddMetaBundle(*Item);
 	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogMainComponent::AddFromAsset(UDialogAsset* DialogAsset)
+{
+	if (!DialogAsset)
+		return;
+
+	// Create a synthetic meta-bundle from the asset
+	FDialogTopicMetaBundleStruct MetaBundle;
+	MetaBundle.Id = GetTypeHash(DialogAsset->GetPathName());
+	MetaBundle.GoodGreetingDialog = DialogAsset->GoodGreeting;
+	MetaBundle.BadGreetingDialog = DialogAsset->BadGreeting;
+	MetaBundle.MinimumRelation = DialogAsset->MinimumRelation;
+	MetaBundle.MetaName = DialogAsset->AssetName;
+	MetaBundle.GoodGreetingVoiceover = DialogAsset->GoodGreetingVoiceover;
+	MetaBundle.BadGreetingVoiceover = DialogAsset->BadGreetingVoiceover;
+
+	// Create a single bundle for all topics
+	FDialogTopicBundleStruct Bundle;
+	Bundle.Id = MetaBundle.Id + 1;
+	Bundle.MetaName = DialogAsset->AssetName + TEXT("_Bundle");
+
+	for (const auto& Topic : DialogAsset->Topics)
+	{
+		AddTopic(Topic);
+		Bundle.TopicList.Add(Topic.Id);
+	}
+
+	AddBundle(Bundle);
+	MetaBundle.TopicBundleList.Add(Bundle.Id);
+	AddMetaBundle(MetaBundle);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -89,12 +130,12 @@ void UDialogMainComponent::AddMetaBundle(const FDialogTopicMetaBundleStruct& Met
 TArray<FDialogTopicStruct> UDialogMainComponent::GetAllDialogTopicForBundle(int64 BundleId) const
 {
 	TArray<FDialogTopicStruct> Out;
-	if (DialogBundle.Contains(BundleId))
+	if (const FDialogTopicBundleStruct* Bundle = DialogBundle.Find(BundleId))
 	{
-		for (auto& ID : DialogBundle[BundleId].TopicList)
+		for (auto& ID : Bundle->TopicList)
 		{
-			if (DialogTopic.Find(ID))
-				Out.Add(DialogTopic[ID]);
+			if (const FDialogTopicStruct* Topic = DialogTopic.Find(ID))
+				Out.Add(*Topic);
 		}
 	}
 
@@ -106,7 +147,7 @@ TArray<FDialogTopicStruct> UDialogMainComponent::GetAllDialogTopicForBundle(int6
 TArray<FDialogTopicStruct> UDialogMainComponent::GetAllDialogTopicForMetaBundle(int64 BundleMetaId) const
 {
 	TArray<FDialogTopicStruct> Out;
-	if (const auto MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
 	{
 		for (auto& ID : MetaIterator->TopicBundleList)
 		{
@@ -118,30 +159,50 @@ TArray<FDialogTopicStruct> UDialogMainComponent::GetAllDialogTopicForMetaBundle(
 
 //----------------------------------------------------------------------------------------------------------------------
 
-FString UDialogMainComponent::GetBadGreeting(int64 BundleMetaId) const
+FText UDialogMainComponent::GetBadGreeting(int64 BundleMetaId) const
 {
-	if (const auto MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
 		return MetaIterator->BadGreetingDialog;
 
-	return "Error";
+	return FText::FromString(TEXT("Error"));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-FString UDialogMainComponent::GetGoodGreeting(int64 BundleMetaId) const
+FText UDialogMainComponent::GetGoodGreeting(int64 BundleMetaId) const
 {
-	if (const auto MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
 		return MetaIterator->GoodGreetingDialog;
 
-	return "Error";
+	return FText::FromString(TEXT("Error"));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 float UDialogMainComponent::GetGreetingRelationLimit(int64 BundleMetaId) const
 {
-	if (const auto MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
 		return MetaIterator->MinimumRelation;
 
 	return 0.f;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+TSoftObjectPtr<USoundBase> UDialogMainComponent::GetGoodGreetingVoiceover(int64 BundleMetaId) const
+{
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+		return MetaIterator->GoodGreetingVoiceover;
+
+	return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+TSoftObjectPtr<USoundBase> UDialogMainComponent::GetBadGreetingVoiceover(int64 BundleMetaId) const
+{
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+		return MetaIterator->BadGreetingVoiceover;
+
+	return nullptr;
 }

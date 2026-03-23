@@ -1,11 +1,11 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Dialog/DialogData.h"
 #include "DialogMainComponent.generated.h"
+
+class UDialogAsset;
 
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -49,6 +49,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddMetaBundleFromDataTable(UDataTable* DataTable);
 
+	/// Load all topics from a UDialogAsset. Replaces the DataTable pipeline.
+	UFUNCTION(BlueprintCallable)
+	void AddFromAsset(UDialogAsset* DialogAsset);
+
 	UFUNCTION(BlueprintCallable)
 	void AddTopic(const FDialogTopicStruct& NewTopic);
 
@@ -65,11 +69,17 @@ public:
 	TArray<FDialogTopicStruct> GetAllDialogTopicForMetaBundle(int64 BundleMetaId) const;
 
 	UFUNCTION(BlueprintCallable)
-	FString GetBadGreeting(int64 BundleMetaId) const;
+	FText GetBadGreeting(int64 BundleMetaId) const;
 
 	UFUNCTION(BlueprintCallable)
-	FString GetGoodGreeting(int64 BundleMetaId) const;
+	FText GetGoodGreeting(int64 BundleMetaId) const;
 
 	UFUNCTION(BlueprintCallable)
 	float GetGreetingRelationLimit(int64 BundleMetaId) const;
+
+	UFUNCTION(BlueprintCallable)
+	TSoftObjectPtr<USoundBase> GetGoodGreetingVoiceover(int64 BundleMetaId) const;
+
+	UFUNCTION(BlueprintCallable)
+	TSoftObjectPtr<USoundBase> GetBadGreetingVoiceover(int64 BundleMetaId) const;
 };

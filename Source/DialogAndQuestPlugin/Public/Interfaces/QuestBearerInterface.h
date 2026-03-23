@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -48,4 +46,18 @@ public:
 	virtual void AddQuest(const FQuestMetaData& QuestMeta);
 
 	virtual void GrantReward(TSubclassOf<UQuestRewardData> RewardData);
+
+	//------------------------------------------------------------------------------------------------------------------
+	// State machine
+	//------------------------------------------------------------------------------------------------------------------
+
+	virtual void MentionQuest(int64 QuestID);
+
+	virtual void AchieveQuest(int64 QuestID);
+
+	virtual void CompleteQuest(int64 QuestID);
+
+	virtual void BotchQuest(int64 QuestID);
+
+	virtual EQuestState GetQuestState(int64 QuestID) const;
 };

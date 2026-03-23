@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Interfaces/QuestBearerInterface.h"
 
@@ -63,4 +61,39 @@ bool IQuestBearerInterface::CanValidate(int64 QuestID, int32 StepID) const
 bool IQuestBearerInterface::CanDisplay(int64 QuestID, int32 StepID, EQuestStepConditionType Condition) const
 {
 	return GetQuestBearerComponentConst()->CanDisplay(QuestID, StepID, Condition);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void IQuestBearerInterface::MentionQuest(int64 QuestID)
+{
+	GetQuestBearerComponent()->MentionQuest(QuestID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void IQuestBearerInterface::AchieveQuest(int64 QuestID)
+{
+	GetQuestBearerComponent()->AchieveQuest(QuestID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void IQuestBearerInterface::CompleteQuest(int64 QuestID)
+{
+	GetQuestBearerComponent()->CompleteQuest(QuestID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void IQuestBearerInterface::BotchQuest(int64 QuestID)
+{
+	GetQuestBearerComponent()->BotchQuest(QuestID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+EQuestState IQuestBearerInterface::GetQuestState(int64 QuestID) const
+{
+	return GetQuestBearerComponentConst()->GetQuestState(QuestID);
 }

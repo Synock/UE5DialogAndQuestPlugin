@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,19 @@
 #include "Quest/QuestData.h"
 #include "QuestMainComponent.generated.h"
 
+class UQuestAsset;
+
 
 ///@brief
-/// This class is designed to contain all the needed quest, server side only and be component of the GameMode
+/// Server-side quest registry. Lives as a component on the GameMode (via IDialogGameModeInterface).
+///
+/// Holds the authoritative FQuestMetaData definitions for all quests in the zone. When a
+/// player tries to progress a quest, TryProgressQuest() validates the request here:
+///   1. Looks up the quest definition.
+///   2. Checks the QuestGiverComponent on the NPC can validate the next step.
+///   3. If valid, calls QuestBearerComponent::ProgressQuest() on the player.
+///
+/// Quest data is loaded at startup via AddQuestFromDataTable() or AddQuestFromAsset().
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DIALOGANDQUESTPLUGIN_API UQuestMainComponent : public UActorComponent
 {
@@ -35,6 +43,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void AddQuestFromDataTable(UDataTable* DataTable);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	void AddQuestFromAsset(UQuestAsset* QuestAsset);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	const FQuestMetaData& GetQuestData(int64 QuestID) const;

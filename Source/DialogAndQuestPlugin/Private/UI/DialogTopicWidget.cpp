@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "UI/DialogTopicWidget.h"
 
@@ -25,7 +23,7 @@ void UDialogTopicWidget::UpdateTopicData()
 				FDialogTextData TextData;
 				TextData.Id = Topic.Id;
 				TextData.TopicName = Topic.Topic;
-				TextData.TopicText = Topic.TopicText;
+				TextData.TopicText = Topic.TopicText.ToString();
 				AddTopicData(TextData);
 			}
 		}

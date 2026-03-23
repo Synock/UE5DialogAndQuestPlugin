@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 
 #include "Actors/AreaQuestValidator.h"
 
@@ -49,22 +47,10 @@ void AAreaQuestValidator::BeginPlay()
 
 void AAreaQuestValidator::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
-	/*if (!HasAuthority())
+	if (!HasAuthority())
 		return;
 
-	const APawn* ActorAsPawn = Cast<APawn>(OtherActor);
-	if (!ActorAsPawn)
-		return;
-
-	APlayerController* PlayerController = Cast<APlayerController>(ActorAsPawn->GetController());
-	if (!PlayerController)
-		return;
-
-	IQuestBearerInterface* QuestBearerInterface = Cast<IQuestBearerInterface>(PlayerController);
-	if (!QuestBearerInterface)
-		return;
-
-	QuestBearerInterface->TryProgressAll(this);*/
+	TryProgressQuest(OtherActor);
 }
 
 void AAreaQuestValidator::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
@@ -88,9 +74,6 @@ bool AAreaQuestValidator::TryProgressQuest(AActor* OtherActor)
 	if (!QuestBearerInterface)
 		return false;
 
-	//QuestBearerInterface->TryProgressAll(this);
-
-	//QuestBearerInterface->TryProgressQuest(ValidatableSteps.QuestID,this);
 
 	return QuestBearerInterface->GetQuestBearerComponent()->Authority_TryProgressQuest(ValidatableSteps.QuestID,this);
 }

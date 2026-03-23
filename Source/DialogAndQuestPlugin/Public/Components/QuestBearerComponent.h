@@ -1,5 +1,3 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,8 +7,38 @@
 #include "QuestBearerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FKnownQuestChanged);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FQuestUpdated, int64, QuestID, int32, QuestStepID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FQuestUpdated, int64, QuestID, int32, QuestStepID, EQuestState, NewState);
 
+/**
+ * Per-player quest state component. Lives on the PlayerController (or any actor
+ * implementing IQuestBearerInterface).
+ *
+ * ## Responsibilities
+ * - Stores all quests the player knows about (KnownQuestData, replicated to owning client).
+ * - Exposes the full quest state machine: Mention → Accept → Progress → Achieve → Complete/Botch.
+ * - Provides step-query helpers (IsAtStep, IsPastStep, etc.) used by the dialog condition
+ *   system (FDialogTopicCondition::VerifyCondition).
+ * - Broadcasts delegates on quest changes so UI (journal, dialog window) can react.
+ *
+ * ## Delegates
+ * - KnownQuestDispatcher: Fires on any quest data change (replication callback).
+ * - NewQuestDispatcher: Fires when a previously unknown quest appears in the list.
+ * - QuestUpdateDispatcher (FQuestUpdated): Fires on every state/step transition with
+ *   (QuestID, StepID, NewState). The game hooks this to persist quest progress to the backend.
+ *
+ * ## Dialog Integration
+ * The dialog system calls CanDisplay() and GetQuestState() (via IQuestBearerInterface)
+ * during FDialogTopicCondition::VerifyCondition(). After every topic click, the dialog
+ * window calls RefreshDialogOptions() which re-evaluates all conditions — so quest-gated
+ * topics appear/disappear immediately as state changes.
+ *
+ * ## Step Progression Flow
+ *   1. Player clicks a dialog topic with QuestRelation or Consequence
+ *   2. TryProgressQuest() → Server RPC → QuestMainComponent::TryProgressQuest()
+ *   3. QuestMainComponent validates via QuestGiverComponent::CanValidateQuestStep()
+ *   4. If valid: QuestBearerComponent::ProgressQuest() advances step, broadcasts QuestUpdateDispatcher
+ *   5. Dialog window receives KnownQuestDispatcher → RefreshDialogOptions() → topics update
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DIALOGANDQUESTPLUGIN_API UQuestBearerComponent : public UActorComponent
 {
@@ -29,6 +57,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	TMap<int64, int32> KnownQuestDataLUT;
+
+	/// Rebuild the LUT from the KnownQuestData array. Call after any mutation.
+	void RebuildQuestLUT();
 
 	UFUNCTION()
 	void OnRep_KnownQuest();
@@ -73,11 +104,40 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FQuestUpdated QuestUpdateDispatcher;
 
-	UFUNCTION(BlueprintCallable)
+	//------------------------------------------------------------------------------------------------------------------
+	// State machine transitions
+	//------------------------------------------------------------------------------------------------------------------
+
+	/// Mention a quest — transitions from Unknown to Mentioned. Adds a journal rumor entry.
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
+	void MentionQuest(int64 QuestID);
+
+	/// Accept a quest — transitions from Unknown/Mentioned to Accepted. Starts step tracking.
+	UFUNCTION(BlueprintCallable, Category = "Quest|State")
 	void AuthorityAddQuest(int64 QuestID);
 
+	/// Mark a quest as Achieved (objectives done, awaiting turn-in).
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
+	void AchieveQuest(int64 QuestID);
+
+	/// Mark a quest as Completed (fully turned in).
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
+	void CompleteQuest(int64 QuestID);
+
+	/// Botch a quest — irrecoverable failure.
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
+	void BotchQuest(int64 QuestID);
+
+	/// Get the current state of a quest.
+	UFUNCTION(BlueprintCallable, Category = "Quest|State")
+	EQuestState GetQuestState(int64 QuestID) const;
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Legacy / step-based progression
+	//------------------------------------------------------------------------------------------------------------------
+
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	void AuthoritySetupQuestData(int64 QuestID, int32 StepID);
+	void AuthoritySetupQuestData(int64 QuestID, int32 StepID, EQuestState InitialState = EQuestState::Accepted);
 
 	UFUNCTION(BlueprintCallable)
 	void TryProgressQuest(int64 QuestID, AActor* Validator);

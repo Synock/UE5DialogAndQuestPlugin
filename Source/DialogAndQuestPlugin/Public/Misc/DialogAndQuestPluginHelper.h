@@ -1,10 +1,10 @@
-// Copyright 2022 Maximilien (Synock) Guislain
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "DialogAndQuestPluginHelper.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogDialogAndQuest, Log, All);
 
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogAndQuestPluginHelper : public UBlueprintFunctionLibrary
@@ -12,12 +12,12 @@ class DIALOGANDQUESTPLUGIN_API UDialogAndQuestPluginHelper : public UBlueprintFu
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "DialogAndQuest")
 	static void Log(const FString& LogMessage);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "DialogAndQuest")
 	static void Warning(const FString& LogMessage);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "DialogAndQuest")
 	static void Error(const FString& LogMessage);
 };
