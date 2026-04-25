@@ -30,6 +30,7 @@ public class DialogAndQuestPlugin : ModuleRules
 				"SlateCore",
 				"UMG",
 				"GameplayTags",
+				"Engine",   // public headers use USoundBase, UDataAsset, etc.
 			}
 			);
 			
@@ -38,8 +39,7 @@ public class DialogAndQuestPlugin : ModuleRules
 			new string[]
 			{
 				"CoreUObject",
-				"Engine",
-				// ... add private dependencies that you statically link with here ...	
+				// ... add private dependencies that you statically link with here ...
 			}
 			);
 		

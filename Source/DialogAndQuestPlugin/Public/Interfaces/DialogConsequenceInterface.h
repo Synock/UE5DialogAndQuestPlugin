@@ -20,10 +20,11 @@ class DIALOGANDQUESTPLUGIN_API IDialogConsequenceInterface
 	GENERATED_BODY()
 
 public:
-	/// Called when a dialog topic with consequences is clicked.
-	/// @param Consequence The consequence data from the topic.
+	/// Called when a dialog topic is clicked.
+	/// @param TopicID  The Id of the FDialogTopicStruct that was clicked — NOT the consequence itself.
+	///                 The server re-fetches and re-validates the topic before processing any consequence.
 	/// @param DialogActor The NPC the player is talking to.
-	virtual void HandleDialogConsequence(const FDialogConsequence& Consequence, AActor* DialogActor) = 0;
+	virtual void HandleDialogConsequence(int64 TopicID, AActor* DialogActor) = 0;
 
 	/// Called to apply a faction relation delta.
 	/// @param DialogActor The NPC whose faction is adjusted.

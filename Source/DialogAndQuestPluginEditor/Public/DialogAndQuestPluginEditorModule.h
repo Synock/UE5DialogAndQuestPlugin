@@ -15,6 +15,8 @@ private:
 	void RegisterAssetTypeActions();
 	void UnregisterAssetTypeActions();
 
+	void RegisterDetailCustomizations();
+	void UnregisterDetailCustomizations();
+
 	TArray<TSharedPtr<class IAssetTypeActions>> RegisteredAssetTypeActions;
 };
-

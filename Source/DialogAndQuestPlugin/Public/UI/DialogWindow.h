@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/DialogComponent.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogWindow.generated.h"
 
 
@@ -14,28 +15,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBankButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRepairButtonEvent);
 
 /**
- * Main dialog window widget. Orchestrates NPC conversation flow.
+ * Default concrete implementation of IDialogWindowInterface.
  *
- * ## Topic Refresh Cycle (quest-driven visibility)
+ * Contains sub-widgets (UDialogHeaderWidget, UDialogTopicWidget, etc.) bound via
+ * BindWidget macros and drives them from its _Implementation overrides. Existing
+ * Blueprints that use UDialogWindow require no changes.
  *
- * Topics are re-evaluated at these points:
- *   1. InitDialogWindow() → initial topic list build
- *   2. DisplayDialogTopic() → after consequence/quest processing → RefreshDialogOptions()
- *   3. DisplayJournalUpdate() → on KnownQuestDispatcher (quest state replicated) → RefreshDialogOptions()
- *
- * RefreshDialogOptions() calls TopicList->UpdateTopicData() which re-runs
- * FDialogTopicCondition::VerifyCondition() on every topic. This means:
- *   - A topic gated on quest step 2 appears the moment the player reaches step 2
- *   - A topic with bConsumeOnUse disappears after first click
- *   - Hyperlinks in response text also refresh (quest-locked keywords become clickable)
+ * Custom game implementations (e.g. UFinalDialogWindow) should implement
+ * IDialogWindowInterface directly rather than inheriting from this class.
  */
 UCLASS()
-class DIALOGANDQUESTPLUGIN_API UDialogWindow : public UUserWidget
+class DIALOGANDQUESTPLUGIN_API UDialogWindow : public UUserWidget, public IDialogWindowInterface
 {
 	GENERATED_BODY()
 
 protected:
-	// Dialog state
+	// Dialog state ---------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	TObjectPtr<UDialogComponent> DialogComponent = nullptr;
 
@@ -48,7 +43,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	FString RelationString;
 
-	// Widget bindings - these must match widget names in the Blueprint
+	// Widget bindings ------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
 	TObjectPtr<class UDialogFooterWidget> Footer = nullptr;
 
@@ -61,11 +56,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
 	TObjectPtr<class UDialogTextWidget> TopicText = nullptr;
 
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
 	TObjectPtr<class UWidgetSwitcher> WidgetSwitcher = nullptr;
 
-	// Optional widget bindings - dynamically added child widgets
+	// Optional sub-widgets -------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
 	TObjectPtr<class UDialogTradeWidget> TradeWidgetPointer = nullptr;
 
@@ -81,14 +75,35 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Widgets")
 	TObjectPtr<class UDialogRepairWidget> RepairWidgetPointer = nullptr;
 
-	// UUserWidget interface
 	virtual void NativeConstruct() override;
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void PostInitRelation();
 
 public:
+	// IDialogWindowInterface — data accessors ------------------------------------
+	virtual UDialogComponent* GetDialogComponent_Implementation() const override { return DialogComponent.Get(); }
+	virtual AActor*            GetDialogActor_Implementation()    const override { return DialogActor.Get();    }
 
+	// IDialogWindowInterface — lifecycle -----------------------------------------
+	virtual void InitDialogWindow_Implementation(UDialogComponent* InputDialogComponent, AActor* ActorDialog) override;
+	virtual void CloseWindow_Implementation() override;
+	virtual void RefreshDialogOptions_Implementation() override;
+
+	// IDialogWindowInterface — topic display -------------------------------------
+	virtual void DisplayDialogTopic_Implementation(int64 ID) override;
+	virtual void DisplayDialogTopicFromString_Implementation(const FString& ID) override;
+	virtual void DisplayPlainString_Implementation(const FString& PlainString) override;
+
+	// IDialogWindowInterface — tab navigation ------------------------------------
+	virtual void DisplayMainDialogWidget_Implementation() override;
+	virtual void DisplayTradeWidget_Implementation()      override;
+	virtual void DisplayGiveWidget_Implementation()       override;
+	virtual void DisplayTrainDialogWidget_Implementation() override;
+	virtual void DisplayBankDialogWidget_Implementation() override;
+	virtual void DisplayRepairDialogWidget_Implementation() override;
+
+	// Sub-widget registration (game-side uses these to attach game-specific widgets)
 	UFUNCTION(BlueprintCallable)
 	void AddTradeWidget(UDialogTradeWidget* TradeWidget);
 
@@ -104,66 +119,22 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddRepairWidget(UDialogRepairWidget* RepairWidget);
 
-	UFUNCTION(BlueprintCallable)
-	const UDialogComponent* GetDialogComponent() const { return DialogComponent; }
+	// Accessors for game-specific derived widgets ---------------------------------
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogTradeWidget*  GetTradeWidget()  const { return TradeWidgetPointer;  }
 
-	UFUNCTION(BlueprintCallable)
-	const AActor* GetDialogActor() const { return DialogActor; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogRepairWidget* GetRepairWidget() const { return RepairWidgetPointer; }
 
-	UFUNCTION(BlueprintCallable)
-	void InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog);
+	// Broadcast when the dialog closes (subscribe in game wrappers if needed).
+	UPROPERTY(BlueprintAssignable) FOnExitEvent        OnExit;
+	UPROPERTY(BlueprintAssignable) FOnTradeButtonEvent  OnTrade;
+	UPROPERTY(BlueprintAssignable) FOnGiveButtonEvent   OnGive;
+	UPROPERTY(BlueprintAssignable) FOnTrainButtonEvent  OnTrain;
+	UPROPERTY(BlueprintAssignable) FOnBankButtonEvent   OnBank;
+	UPROPERTY(BlueprintAssignable) FOnRepairButtonEvent OnRepair;
 
-	UFUNCTION(BlueprintCallable)
-	void DisplayDialogTopic(int64 ID);
-
+	// Journal update helper (called by dialog systems after quest-state changes).
 	UFUNCTION(BlueprintCallable)
 	void DisplayJournalUpdate();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayDialogTopicFromString(const FString& ID);
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayPlainString(const FString& PlainString);
-
-	UFUNCTION(BlueprintCallable)
-	virtual void CloseWindow();
-
-	UFUNCTION(BlueprintCallable)
-	virtual void RefreshDialogOptions();
-
-	UPROPERTY(BlueprintAssignable)
-	FOnExitEvent OnExit;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnTradeButtonEvent OnTrade;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnGiveButtonEvent OnGive;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnTrainButtonEvent OnTrain;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnBankButtonEvent OnBank;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnRepairButtonEvent OnRepair;
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayGiveWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayTradeWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayMainDialogWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayTrainDialogWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayBankDialogWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void DisplayRepairDialogWidget();
 };

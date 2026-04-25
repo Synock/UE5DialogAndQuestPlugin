@@ -1,4 +1,3 @@
-
 #include "Components/DialogComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "Interfaces/DialogGameModeInterface.h"
@@ -34,33 +33,130 @@ void UDialogComponent::OnRep_DialogData()
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+		return;
+
+	if (!Asset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UDialogComponent::InitDialogFromAsset — null asset"));
+		return;
+	}
+
+	GoodGreeting              = Asset->GoodGreeting;
+	BadGreeting               = Asset->BadGreeting;
+	GreetingLimit             = Asset->MinimumRelation;
+	GoodGreetingVoiceover     = Asset->GoodGreetingVoiceover;
+	BadGreetingVoiceover      = Asset->BadGreetingVoiceover;
+	GoodGreetingVoiceoverPath = GoodGreetingVoiceover.ToSoftObjectPath().ToString();
+	BadGreetingVoiceoverPath  = BadGreetingVoiceover.ToSoftObjectPath().ToString();
+
+	// Process shared assets first so NPC-specific topics take precedence:
+	// AddTopicsFromAsset skips a topic ID if already present, so the LAST caller for a given ID wins.
+	// By processing shared assets into the set first, then calling AddTopicsFromAsset(Asset) last,
+	// the NPC's own topics overwrite any shared-asset topics with the same ID.
+	// Note: do NOT pre-add Asset to Visited here — AddTopicsFromAsset adds it when it begins
+	// processing, so the circular-reference guard still works correctly.
+	TSet<UDialogAsset*> Visited;
+
+	for (const TSoftObjectPtr<UDialogAsset>& SharedRef : Asset->SharedTopicAssets)
+	{
+		if (UDialogAsset* Shared = SharedRef.LoadSynchronous())
+			AddTopicsFromAsset(Shared, Visited);
+		else
+			UE_LOG(LogTemp, Warning, TEXT("UDialogComponent::InitDialogFromAsset — failed to load shared asset in '%s'"), *Asset->AssetName);
+	}
+
+	AddTopicsFromAsset(Asset, Visited);
+	bDialogInitialized = true;
+}
+
+void UDialogComponent::AddTopicsFromAsset(UDialogAsset* Asset, TSet<UDialogAsset*>& Visited)
+{
+	if (!Asset)
+		return;
+
+	// Circular reference guard — a content error, but must not crash the server.
+	if (Visited.Contains(Asset))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UDialogComponent::AddTopicsFromAsset — circular SharedTopicAssets reference detected on '%s'. Skipping."),
+			*Asset->AssetName);
+		return;
+	}
+	Visited.Add(Asset);
+
+	// Depth-first recursion through nested shared assets.
+	for (const TSoftObjectPtr<UDialogAsset>& SharedRef : Asset->SharedTopicAssets)
+	{
+		if (UDialogAsset* Shared = SharedRef.LoadSynchronous())
+			AddTopicsFromAsset(Shared, Visited);
+	}
+
+	for (const FDialogTopicStruct& Topic : Asset->Topics)
+	{
+		// Overwrite any previously-added entry with the same ID.
+		// Because shared assets are processed before this asset's direct topics,
+		// and because the main NPC asset is always the last AddTopicsFromAsset call
+		// from InitDialogFromAsset, NPC-specific topics naturally win on ID collision.
+		if (DialogTopic.Contains(Topic.Id))
+		{
+			// Replace in the replicated array as well.
+			for (FDialogTopicStruct& Existing : DialogTopicData)
+			{
+				if (Existing.Id == Topic.Id)
+				{
+					Existing = Topic;
+					break;
+				}
+			}
+		}
+		else
+		{
+			DialogTopicData.Add(Topic);
+		}
+		DialogTopic.Add(Topic.Id, Topic);
+		DialogTopicLUT.Add(Topic.Topic, Topic.Id);
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogComponent::InitDialogFromID(int64 ID)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
 
-	TArray<FDialogTopicStruct> FullDialog;
 	IDialogGameModeInterface* GM = Cast<IDialogGameModeInterface>(UGameplayStatics::GetGameMode(GetWorld()));
-	if (GM)
-	{
-		auto DialogComponent = GM->GetMainDialogComponent();
-		if (DialogComponent)
-		{
-			FullDialog = DialogComponent->GetAllDialogTopicForMetaBundle(ID);
-
-			GoodGreeting = DialogComponent->GetGoodGreeting(ID);
-			BadGreeting = DialogComponent->GetBadGreeting(ID);
-			GreetingLimit = DialogComponent->GetGreetingRelationLimit(ID);
-			GoodGreetingVoiceover = DialogComponent->GetGoodGreetingVoiceover(ID);
-			BadGreetingVoiceover = DialogComponent->GetBadGreetingVoiceover(ID);
-			bDialogInitialized = true;
-		}
-	}
-
-	if (!bDialogInitialized)
+	if (!GM)
 		return;
 
-	for (auto& DialogData : FullDialog)
+	UDialogMainComponent* MainDialog = GM->GetMainDialogComponent();
+	if (!MainDialog)
+		return;
+
+	// Guard: if the MetaBundle isn't registered yet (e.g. asset not in BP_MainGameMode.DialogAssets,
+	// or InitDialog fired before StartPlay finished), do NOT mark as initialized — the NPC's retry
+	// timer in InitDialog() depends on bDialogInitialized remaining false.
+	if (!MainDialog->HasMetaBundle(ID))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UDialogComponent::InitDialogFromID — MetaBundle %lld not found in DialogMainComponent. "
+			     "Ensure the UDialogAsset is listed in BP_MainGameMode.DialogAssets."), ID);
+		return;
+	}
+
+	GoodGreeting            = MainDialog->GetGoodGreeting(ID);
+	BadGreeting             = MainDialog->GetBadGreeting(ID);
+	GreetingLimit           = MainDialog->GetGreetingRelationLimit(ID);
+	GoodGreetingVoiceover   = MainDialog->GetGoodGreetingVoiceover(ID);
+	BadGreetingVoiceover    = MainDialog->GetBadGreetingVoiceover(ID);
+	GoodGreetingVoiceoverPath = GoodGreetingVoiceover.ToSoftObjectPath().ToString();
+	BadGreetingVoiceoverPath  = BadGreetingVoiceover.ToSoftObjectPath().ToString();
+	bDialogInitialized      = true;
+
+	for (const FDialogTopicStruct& DialogData : MainDialog->GetAllDialogTopicForMetaBundle(ID))
 	{
 		DialogTopicData.Add(DialogData);
 		DialogTopic.FindOrAdd(DialogData.Id, DialogData);
@@ -176,6 +272,16 @@ void UDialogComponent::ConsumeTopicByID(int64 TopicID)
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogComponent::OnRep_GreetingVoiceovers()
+{
+	if (!GoodGreetingVoiceoverPath.IsEmpty())
+		GoodGreetingVoiceover = TSoftObjectPtr<USoundBase>(FSoftObjectPath(GoodGreetingVoiceoverPath));
+	if (!BadGreetingVoiceoverPath.IsEmpty())
+		BadGreetingVoiceover = TSoftObjectPtr<USoundBase>(FSoftObjectPath(BadGreetingVoiceoverPath));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -185,4 +291,6 @@ void UDialogComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UDialogComponent, BadGreeting);
 	DOREPLIFETIME(UDialogComponent, GreetingLimit);
 	DOREPLIFETIME(UDialogComponent, bDialogInitialized);
+	DOREPLIFETIME(UDialogComponent, GoodGreetingVoiceoverPath);
+	DOREPLIFETIME(UDialogComponent, BadGreetingVoiceoverPath);
 }

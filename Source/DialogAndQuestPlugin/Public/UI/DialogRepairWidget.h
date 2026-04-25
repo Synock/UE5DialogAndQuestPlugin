@@ -2,13 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogRepairWidget.generated.h"
-
-/**
- * Dialog repair widget for handling item repair functionality
- */
-class UDialogComponent;
-class UDialogWindow;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCloseRepair);
 
@@ -18,26 +13,27 @@ class DIALOGANDQUESTPLUGIN_API UDialogRepairWidget : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	// UUserWidget interface
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")
+	TObjectPtr<class UButton> CloseButton = nullptr;
+
 	virtual void NativeConstruct() override;
 
+	UFUNCTION() void OnCloseButtonClicked();
+
 public:
-	// Called when the widget is displayed
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
-
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Dialog|Repair")
-	void DoOnDisplay();
-
 	UFUNCTION(BlueprintCallable, Category = "Dialog|Repair")
-	void InitDialog(UDialogWindow* InputParentDialog);
+	void InitDialog(UObject* InputParentDialog);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog|Repair")
+	void DoOnDisplay();
+	virtual void DoOnDisplay_Implementation() {}
 
 	UPROPERTY(BlueprintAssignable)
 	FOnCloseRepair OnClose;
 };
-
-
-

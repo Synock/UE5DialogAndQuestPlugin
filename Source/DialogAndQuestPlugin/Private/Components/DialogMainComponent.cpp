@@ -77,29 +77,67 @@ void UDialogMainComponent::AddFromAsset(UDialogAsset* DialogAsset)
 	if (!DialogAsset)
 		return;
 
-	// Create a synthetic meta-bundle from the asset
-	FDialogTopicMetaBundleStruct MetaBundle;
-	MetaBundle.Id = GetTypeHash(DialogAsset->GetPathName());
-	MetaBundle.GoodGreetingDialog = DialogAsset->GoodGreeting;
-	MetaBundle.BadGreetingDialog = DialogAsset->BadGreeting;
-	MetaBundle.MinimumRelation = DialogAsset->MinimumRelation;
-	MetaBundle.MetaName = DialogAsset->AssetName;
-	MetaBundle.GoodGreetingVoiceover = DialogAsset->GoodGreetingVoiceover;
-	MetaBundle.BadGreetingVoiceover = DialogAsset->BadGreetingVoiceover;
+	// Derive stable IDs from the asset path — same asset always maps to the same IDs.
+	const int64 MetaBundleId = static_cast<int64>(GetTypeHash(DialogAsset->GetPathName()));
+	const int64 OwnBundleId  = MetaBundleId + 1;
 
-	// Create a single bundle for all topics
-	FDialogTopicBundleStruct Bundle;
-	Bundle.Id = MetaBundle.Id + 1;
-	Bundle.MetaName = DialogAsset->AssetName + TEXT("_Bundle");
+	// Idempotency guard: if this asset was already registered (e.g. a shared asset that is also
+	// listed in BP_MainGameMode.DialogAssets), do nothing.
+	if (DialogMetaBundle.Contains(MetaBundleId))
+		return;
 
-	for (const auto& Topic : DialogAsset->Topics)
+	// --- 1. Process shared topic assets first (recursive, depth-first) ---
+	// We build a list of bundle IDs to include in our MetaBundle.
+	TArray<int64> SharedBundleIds;
+	for (const TSoftObjectPtr<UDialogAsset>& SharedRef : DialogAsset->SharedTopicAssets)
 	{
-		AddTopic(Topic);
-		Bundle.TopicList.Add(Topic.Id);
+		UDialogAsset* SharedAsset = SharedRef.LoadSynchronous();
+		if (!SharedAsset)
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("UDialogMainComponent::AddFromAsset — shared asset ref is null in '%s'"),
+				*DialogAsset->AssetName);
+			continue;
+		}
+
+		// Register the shared asset if not already done.
+		AddFromAsset(SharedAsset);
+
+		// Point our MetaBundle at the shared asset's own bundle.
+		const int64 SharedBundleId = static_cast<int64>(GetTypeHash(SharedAsset->GetPathName())) + 1LL;
+		SharedBundleIds.Add(SharedBundleId);
 	}
 
-	AddBundle(Bundle);
-	MetaBundle.TopicBundleList.Add(Bundle.Id);
+	// --- 2. Build the MetaBundle for this asset ---
+	FDialogTopicMetaBundleStruct MetaBundle;
+	MetaBundle.Id                  = MetaBundleId;
+	MetaBundle.GoodGreetingDialog  = DialogAsset->GoodGreeting;
+	MetaBundle.BadGreetingDialog   = DialogAsset->BadGreeting;
+	MetaBundle.MinimumRelation     = DialogAsset->MinimumRelation;
+	MetaBundle.MetaName            = DialogAsset->AssetName;
+	MetaBundle.GoodGreetingVoiceover = DialogAsset->GoodGreetingVoiceover;
+	MetaBundle.BadGreetingVoiceover  = DialogAsset->BadGreetingVoiceover;
+
+	// Include shared bundles first so they appear before NPC-specific topics.
+	MetaBundle.TopicBundleList.Append(SharedBundleIds);
+
+	// --- 3. Register this asset's own topics as a separate bundle ---
+	if (DialogAsset->Topics.Num() > 0)
+	{
+		FDialogTopicBundleStruct OwnBundle;
+		OwnBundle.Id       = OwnBundleId;
+		OwnBundle.MetaName = DialogAsset->AssetName + TEXT("_Bundle");
+
+		for (const FDialogTopicStruct& Topic : DialogAsset->Topics)
+		{
+			AddTopic(Topic);
+			OwnBundle.TopicList.Add(Topic.Id);
+		}
+
+		AddBundle(OwnBundle);
+		MetaBundle.TopicBundleList.Add(OwnBundleId);
+	}
+
 	AddMetaBundle(MetaBundle);
 }
 

@@ -2,6 +2,7 @@
 
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Engine/AssetManager.h"
 #include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
@@ -30,88 +31,11 @@ void UDialogWindow::NativeConstruct()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::DisplayGiveWidget()
-{
-	OnGive.Broadcast();
-	if (GiveWidgetPointer)
-	{
-		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
-		TopicList->SetIsEnabled(false);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void UDialogWindow::DisplayTradeWidget()
-{
-	OnTrade.Broadcast();
-	if (TradeWidgetPointer)
-	{
-		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
-		TopicList->SetIsEnabled(false);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void UDialogWindow::DisplayMainDialogWidget()
-{
-	if (TopicText)
-	{
-		WidgetSwitcher->SetActiveWidget(TopicText);
-	}
-
-	TopicList->SetIsEnabled(true);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void UDialogWindow::DisplayTrainDialogWidget()
-{
-	OnTrain.Broadcast();
-	if (TrainWidgetPointer)
-	{
-		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
-		TopicList->SetIsEnabled(false);
-		TrainWidgetPointer->DoOnDisplay();
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void UDialogWindow::DisplayBankDialogWidget()
-{
-	OnBank.Broadcast();
-	if (BankWidgetPointer)
-	{
-		WidgetSwitcher->SetActiveWidget(BankWidgetPointer);
-		TopicList->SetIsEnabled(false);
-		BankWidgetPointer->DoOnDisplay();
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void UDialogWindow::DisplayRepairDialogWidget()
-{
-	OnRepair.Broadcast();
-	if (RepairWidgetPointer)
-	{
-		WidgetSwitcher->SetActiveWidget(RepairWidgetPointer);
-		TopicList->SetIsEnabled(false);
-		RepairWidgetPointer->DoOnDisplay();
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
 void UDialogWindow::AddTradeWidget(UDialogTradeWidget* TradeWidget)
 {
 	TradeWidgetPointer = TradeWidget;
 	WidgetSwitcher->AddChild(TradeWidgetPointer);
 }
-
-//----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
 {
@@ -119,23 +43,17 @@ void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
 	WidgetSwitcher->AddChild(GiveWidgetPointer);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
 void UDialogWindow::AddTrainWidget(UDialogTrainWidget* TrainWidget)
 {
 	TrainWidgetPointer = TrainWidget;
 	WidgetSwitcher->AddChild(TrainWidgetPointer);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
 void UDialogWindow::AddBankWidget(UDialogBankWidget* BankWidget)
 {
 	BankWidgetPointer = BankWidget;
 	WidgetSwitcher->AddChild(BankWidgetPointer);
 }
-
-//----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::AddRepairWidget(UDialogRepairWidget* RepairWidget)
 {
@@ -145,7 +63,7 @@ void UDialogWindow::AddRepairWidget(UDialogRepairWidget* RepairWidget)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
+void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
 {
 	check(InputDialogComponent);
 
@@ -154,7 +72,7 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	IDialogInterface* DialogActorInterface = Cast<IDialogInterface>(DialogActor);
 	if (DialogActor && DialogActorInterface)
 	{
-		RelationValue = DialogActorInterface->GetRelation(GetOwningPlayerPawn());
+		RelationValue  = DialogActorInterface->GetRelation(GetOwningPlayerPawn());
 		RelationString = DialogActorInterface->GetRelationString(RelationValue);
 		DialogComponent = DialogActorInterface->GetDialogComponent();
 	}
@@ -169,7 +87,6 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
 
-	// Configure header buttons based on NPC capabilities
 	if (Header && DialogActorInterface)
 	{
 		Header->ConfigureButtons(
@@ -179,7 +96,6 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 			DialogActorInterface->CanBank(),
 			DialogActorInterface->CanRepair()
 		);
-
 		Header->SetRelationValue(RelationValue);
 		Header->SetRelationString(RelationString);
 		Header->SetDialogName(DialogActorInterface->GetCharacterNameForDialog().ToString());
@@ -188,128 +104,200 @@ void UDialogWindow::InitDialogWindow(UDialogComponent* InputDialogComponent, AAc
 	TopicText->ClearList();
 	TopicList->UpdateTopicData();
 
-	if (RelationValue >= DialogComponent->GetGreetingLimit())
-	{
+	const bool bGoodGreeting = RelationValue >= DialogComponent->GetGreetingLimit();
+	if (bGoodGreeting)
 		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting().ToString());
-	}
 	else
-	{
 		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting().ToString());
-	}
 
+	// Async greeting voiceover
+	const TSoftObjectPtr<USoundBase> GreetingVO = bGoodGreeting
+		? DialogComponent->GetGoodGreetingVoiceover()
+		: DialogComponent->GetBadGreetingVoiceover();
+
+	if (!GreetingVO.IsNull())
+	{
+		TWeakObjectPtr<UDialogComponent> WeakComp(DialogComponent.Get());
+		UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			GreetingVO.ToSoftObjectPath(),
+			FStreamableDelegate::CreateWeakLambda(this,
+				[WeakComp, SoftVO = GreetingVO]()
+				{
+					if (UDialogComponent* DC = WeakComp.Get())
+						if (USoundBase* Sound = SoftVO.Get())
+							DC->OnVoiceoverRequested.Broadcast(Sound, 0.f);
+				})
+		);
+	}
 
 	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 	{
-		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.AddDynamic(
+		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.AddUniqueDynamic(
 			this, &UDialogWindow::DisplayJournalUpdate);
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::DisplayJournalUpdate()
+void UDialogWindow::CloseWindow_Implementation()
 {
-	RefreshDialogOptions();
-	TopicText->AddEmptyTopicData("<Italic>Your quest journal has been updated.</>");
+	if (DialogComponent)
+		DialogComponent->OnVoiceoverStop.Broadcast();
+
+	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
+		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
+
+	DisplayMainDialogWidget_Implementation();
+	OnExit.Broadcast();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::DisplayDialogTopic(int64 ID)
+void UDialogWindow::RefreshDialogOptions_Implementation()
+{
+	TopicList->UpdateTopicData();
+	TopicText->ReprocessTopicLinks();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::DisplayDialogTopic_Implementation(int64 ID)
 {
 	const FDialogTopicStruct* TopicPtr = DialogComponent->GetDialogTopicSafe(ID);
 	if (!TopicPtr)
 		return;
 
-	// Copy by value — ConsumeTopicByID below may remove the map entry.
 	const FDialogTopicStruct Topic = *TopicPtr;
 	TopicPtr = nullptr;
 
+	DialogComponent->OnVoiceoverStop.Broadcast();
 	TopicText->AddTopicText(ID);
 
-	// Process consequences (new system)
 	if (Topic.Consequence.HasConsequence())
 	{
-		if (IDialogConsequenceInterface* ConsequenceHandler = Cast<IDialogConsequenceInterface>(GetOwningPlayer()))
-		{
-			ConsequenceHandler->HandleDialogConsequence(Topic.Consequence, DialogActor);
-		}
+		if (IDialogConsequenceInterface* Handler = Cast<IDialogConsequenceInterface>(GetOwningPlayer()))
+			Handler->HandleDialogConsequence(Topic.Id, DialogActor.Get());
 	}
 
-	// Consume-on-use topics
 	if (Topic.TopicCondition.bConsumeOnUse)
-	{
-		// Note: we must access the component mutably for consumption
-		if (UDialogComponent* MutableDialog = const_cast<UDialogComponent*>(DialogComponent.Get()))
-		{
-			MutableDialog->ConsumeTopicByID(ID);
-		}
-	}
+		DialogComponent->ConsumeTopicByID(ID);
 
-	// Fire voiceover if available
 	if (!Topic.VoiceoverCue.IsNull())
 	{
-		USoundBase* Sound = Topic.VoiceoverCue.LoadSynchronous();
-		if (Sound && DialogComponent)
-		{
-			const_cast<UDialogComponent*>(DialogComponent.Get())->OnVoiceoverRequested.Broadcast(Sound, Topic.VoiceoverDuration);
-		}
+		TWeakObjectPtr<UDialogComponent> WeakComp(DialogComponent.Get());
+		const float Dur = Topic.VoiceoverDuration;
+		UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			Topic.VoiceoverCue.ToSoftObjectPath(),
+			FStreamableDelegate::CreateWeakLambda(this,
+				[WeakComp, SoftCue = Topic.VoiceoverCue, Dur]()
+				{
+					if (UDialogComponent* DC = WeakComp.Get())
+						if (USoundBase* Sound = SoftCue.Get())
+							DC->OnVoiceoverRequested.Broadcast(Sound, Dur);
+				})
+		);
 	}
+	if (!Topic.VoiceoverEventName.IsNone())
+		DialogComponent->OnMiddlewareVoiceoverRequested.Broadcast(Topic.VoiceoverEventName);
 
-	// Legacy quest relation (backward compat with existing DataTables)
-	if (IQuestGiverInterface* GiverInterface = Cast<IQuestGiverInterface>(DialogActor))
+	if (IQuestGiverInterface* GiverIF = Cast<IQuestGiverInterface>(DialogActor))
 	{
-		if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
+		if (IQuestBearerInterface* BearerIF = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 		{
 			if (Topic.QuestRelation.QuestID != 0)
 			{
-				for (auto& StepData : Topic.QuestRelation.Steps)
+				for (const auto& StepData : Topic.QuestRelation.Steps)
 				{
-					if (BearerInterface->CanValidate(Topic.QuestRelation.QuestID, StepData))
-					{
-						BearerInterface->TryProgressQuest(
-							Topic.QuestRelation.QuestID, DialogActor);
-					}
+					if (BearerIF->CanValidate(Topic.QuestRelation.QuestID, StepData))
+						BearerIF->TryProgressQuest(Topic.QuestRelation.QuestID, DialogActor.Get());
 				}
 			}
 		}
 	}
 
-	RefreshDialogOptions();
+	RefreshDialogOptions_Implementation();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::DisplayDialogTopicFromString(const FString& ID)
+void UDialogWindow::DisplayDialogTopicFromString_Implementation(const FString& ID)
 {
-	DisplayDialogTopic(DialogComponent->GetDialogTopicID(ID));
+	DisplayDialogTopic_Implementation(DialogComponent->GetDialogTopicID(ID));
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::DisplayPlainString(const FString& PlainString)
+void UDialogWindow::DisplayPlainString_Implementation(const FString& PlainString)
 {
 	TopicText->AddEmptyTopicData(PlainString);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::CloseWindow()
+void UDialogWindow::DisplayJournalUpdate()
 {
-	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
-	{
-		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
-	}
-
-	DisplayMainDialogWidget();
-	OnExit.Broadcast();
+	RefreshDialogOptions_Implementation();
+	TopicText->AddEmptyTopicData(TEXT("<Italic>Your quest journal has been updated.</>"));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogWindow::RefreshDialogOptions()
+void UDialogWindow::DisplayMainDialogWidget_Implementation()
 {
-	TopicList->UpdateTopicData();
-	TopicText->ReprocessTopicLinks();
+	if (TopicText)
+		WidgetSwitcher->SetActiveWidget(TopicText);
+	TopicList->SetIsEnabled(true);
+}
+
+void UDialogWindow::DisplayTradeWidget_Implementation()
+{
+	OnTrade.Broadcast();
+	if (TradeWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
+		TopicList->SetIsEnabled(false);
+	}
+}
+
+void UDialogWindow::DisplayGiveWidget_Implementation()
+{
+	OnGive.Broadcast();
+	if (GiveWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
+		TopicList->SetIsEnabled(false);
+	}
+}
+
+void UDialogWindow::DisplayTrainDialogWidget_Implementation()
+{
+	OnTrain.Broadcast();
+	if (TrainWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
+		TopicList->SetIsEnabled(false);
+		TrainWidgetPointer->DoOnDisplay();
+	}
+}
+
+void UDialogWindow::DisplayBankDialogWidget_Implementation()
+{
+	OnBank.Broadcast();
+	if (BankWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(BankWidgetPointer);
+		TopicList->SetIsEnabled(false);
+		BankWidgetPointer->DoOnDisplay();
+	}
+}
+
+void UDialogWindow::DisplayRepairDialogWidget_Implementation()
+{
+	OnRepair.Broadcast();
+	if (RepairWidgetPointer)
+	{
+		WidgetSwitcher->SetActiveWidget(RepairWidgetPointer);
+		TopicList->SetIsEnabled(false);
+		RepairWidgetPointer->DoOnDisplay();
+	}
 }

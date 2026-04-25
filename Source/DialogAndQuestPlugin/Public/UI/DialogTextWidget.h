@@ -1,50 +1,46 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DialogTextChunkWidget.h"
-#include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ListView.h"
+#include "Interfaces/DialogWindowInterface.h"
+#include "UI/DialogTextChunkWidget.h"
 #include "DialogTextWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogTextWidget : public UUserWidget
 {
 	GENERATED_BODY()
+
 protected:
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
 
-	UPROPERTY(BlueprintReadWrite)
-	UListView* ListViewWidget = nullptr;
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void AddTopicData(const FDialogTextData& DialogTopic);
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<UListView> ListViewWidget = nullptr;
 
 	UFUNCTION(BlueprintCallable)
-	FString ProcessText(const FString & InputString) const;
+	FString ProcessText(const FString& InputString) const;
+
+	void AddTopicData(const FDialogTextData& DialogTopic);
 
 public:
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable)
 	void ClearList();
 
 	UFUNCTION(BlueprintCallable)
 	void AddEmptyTopicData(const FString& DialogText);
 
 	UFUNCTION(BlueprintCallable)
-	void InitDialog(UDialogWindow* InputParentDialog);
+	void InitDialog(UObject* InputParentDialog);
 
 	UFUNCTION(BlueprintCallable)
 	void AddTopicText(int64 TopicID);
 
-	//Reprocess the already displayed text to find new Hyperlinks
+	/** Reprocess already-displayed text to resolve newly-available hyperlinks. */
 	UFUNCTION(BlueprintCallable)
 	void ReprocessTopicLinks();
 };

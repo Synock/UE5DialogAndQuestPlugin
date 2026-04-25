@@ -637,29 +637,127 @@ For backward compatibility with v1 saves that lack a state field, the default `I
 
 ## 13. Voiceover Integration
 
-Every `FDialogTopicStruct`, `FQuestStep`, and `FDialogTopicMetaBundleStruct` (greetings) has three voiceover fields:
+Every `FDialogTopicStruct`, `FQuestStep`, and `FDialogTopicMetaBundleStruct` (greetings) has voiceover fields:
 
 | Field | Type | Use |
 |-------|------|-----|
-| `VoiceoverCue` | `TSoftObjectPtr<USoundBase>` | UE sound asset |
+| `VoiceoverCue` | `TSoftObjectPtr<USoundBase>` | UE sound asset (loaded async) |
 | `VoiceoverEventName` | `FName` | External middleware event (Wwise/FMOD) |
-| `VoiceoverDuration` | `float` | Manual subtitle duration (0 = use asset duration) |
+| `VoiceoverDuration` | `float` | Subtitle hint in seconds (0 = use asset duration) |
 
-### Playback
+### Delegates on `UDialogComponent`
 
-The `UDialogComponent` fires `OnVoiceoverRequested(USoundBase*, float)` when a topic with a voiceover cue is displayed. Bind to this delegate to play audio:
+| Delegate | Signature | When fired |
+|----------|-----------|------------|
+| `OnVoiceoverRequested` | `(USoundBase* Sound, float Duration)` | Topic or greeting has a VO cue and the asset has finished async loading |
+| `OnVoiceoverStop` | `()` | Before every new topic starts, and in `CloseWindow()` |
+| `OnMiddlewareVoiceoverRequested` | `(FName EventName)` | Topic has `VoiceoverEventName` set (fires synchronously on click) |
 
-```cpp
-// In your NPC or a UI manager:
-DialogComponent->OnVoiceoverRequested.AddDynamic(this, &AMyNPC::OnVoiceover);
+Greeting VOs (`GoodGreetingVoiceover` / `BadGreetingVoiceover`) are replicated to clients as string paths and fire `OnVoiceoverRequested` automatically when the dialog window opens. **No extra wiring is needed for greetings.**
 
-void AMyNPC::OnVoiceover(USoundBase* Sound, float Duration)
-{
-    UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
-}
+### Naming convention (required for auto-link scripts)
+
+```
+Content/Sounds/Dialog/{NPCName}/
+  VO_{NPCName}_Greeting_Good.uasset
+  VO_{NPCName}_Greeting_Bad.uasset
+  VO_{NPCName}_Topic_{TopicKeyword}.uasset
 ```
 
-For external middleware, check `VoiceoverEventName` in the topic struct and post the event through your audio system.
+### Step 1 — Add a VoiceAudioComponent to the NPC Blueprint
+
+1. Open your NPC Blueprint (e.g. `BP_Baker`).
+2. Add an **Audio Component**, name it `VoiceAudioComponent`.
+3. Attach it to the `head` socket on the skeletal mesh.
+4. Set **Auto Activate → false**.
+5. Set an appropriate attenuation preset (short range, no reverb).
+
+### Step 2 — Bind to `OnVoiceoverRequested` on BeginPlay
+
+In the NPC Blueprint's Event Graph:
+
+```
+Event BeginPlay
+  → Get Dialog Component
+  → Bind Event to OnVoiceoverRequested
+        (SoundCue USoundBase*, Duration float)
+        → Stop VoiceAudioComponent          ← interrupt previous line
+        → Set Sound (VoiceAudioComponent, SoundCue)
+        → Play (VoiceAudioComponent)
+        → Set local variable "LastVODuration" = Duration
+```
+
+### Step 3 — Bind to `OnVoiceoverStop`
+
+```
+Event BeginPlay (continued)
+  → Bind Event to OnVoiceoverStop
+        → Stop VoiceAudioComponent
+        → Hide subtitle widget (if any)
+```
+
+This fires automatically when:
+- The player clicks a new topic (before the new VO starts)
+- `CloseWindow()` is called
+
+### Step 4 — Create `WBP_Subtitle` (optional subtitle overlay)
+
+1. Create a new Widget Blueprint: `WBP_Subtitle`.
+2. Add a **Vertical Box** with a **Text Block** (`SubtitleText`) and an optional **Text Block** (`SpeakerName`).
+3. Expose two Blueprint functions:
+   - `ShowSubtitle(SpeakerName FText, SubtitleText FText, Duration float)` — sets text, makes widget visible, starts a timer that calls `HideSubtitle()` after `Duration` seconds (use `5.0f` fallback when Duration == 0).
+   - `HideSubtitle()` — hides the widget.
+4. Add the widget to your HUD layout at the bottom of the screen.
+
+### Step 5 — Drive subtitles from `UI_DialogWindow`
+
+In `UI_DialogWindow` Event Graph:
+
+```
+Event Construct
+  → Get Dialog Component (from owning NPC)
+  → Bind Event to OnVoiceoverRequested
+        (SoundCue, Duration)
+        → Get Owning HUD → Cast to BP_MainHUD
+        → Get Subtitle Widget
+        → ShowSubtitle(
+              SpeakerName = DialogComponent→GetDialogName(),
+              SubtitleText = TopicText (cache from last AddTopicText call),
+              Duration = Duration)
+
+  → Bind Event to OnVoiceoverStop
+        → Get Subtitle Widget → HideSubtitle()
+```
+
+`FDialogTextData` now carries `VoiceoverCue` and `VoiceoverDuration` — in `UI_DialogTextChunk`'s `InitData` event you can read `ItemData.VoiceoverDuration` for fine-grained per-chunk subtitle timing.
+
+### Step 6 — External middleware (Wwise / FMOD)
+
+Bind to `OnMiddlewareVoiceoverRequested` instead of `OnVoiceoverRequested` when using an external audio system:
+
+```
+Bind Event to OnMiddlewareVoiceoverRequested
+  (EventName FName)
+  → AkComponent → Post Ak Event (EventName)
+  // OR
+  → FMOD → Play Event By Name (EventName)
+```
+
+Both `OnVoiceoverRequested` and `OnMiddlewareVoiceoverRequested` fire independently — a topic can have both a `VoiceoverCue` (for editor preview) and a `VoiceoverEventName` (for production audio).
+
+### Step 7 — Assign assets to topics
+
+Open each `DA_NPC_*` asset (UDialogAsset):
+
+- **Greeting|Voiceover** category → assign `GoodGreetingVoiceover` and `BadGreetingVoiceover`.
+- **Topics** array → expand each entry → **Dialog|Voiceover** → assign `VoiceoverCue`. Leave `VoiceoverDuration = 0` unless you have a precise clip length for subtitles.
+
+### Step 8 — Verify in Multiplayer PIE
+
+1. **Play as Listen Server + 1 Client**.
+2. From the client window, interact with an NPC.
+3. Confirm: greeting VO plays from the NPC head socket, subtitle appears, clicking a new topic stops the previous VO and starts the new one, closing dialog stops VO.
+4. Check **Output Log** for any `LogAssetManager` warnings about missing soft object paths.
 
 ---
 

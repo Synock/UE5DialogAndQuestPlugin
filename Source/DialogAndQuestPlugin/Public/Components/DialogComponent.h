@@ -2,10 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Dialog/DialogAsset.h"
 #include "Dialog/DialogData.h"
 #include "DialogComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnVoiceoverRequested, USoundBase*, SoundCue, float, Duration);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVoiceoverStop);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMiddlewareVoiceoverRequested, FName, EventName);
 
 /**
  * Per-NPC dialog data component. Holds the full set of topics this NPC can discuss.
@@ -74,12 +77,24 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool bDialogInitialized = false;
 
-	/// Voiceover cues for greetings.
+	/// Voiceover cues for greetings (set server-side, reconstructed on client via OnRep).
 	UPROPERTY(BlueprintReadOnly)
 	TSoftObjectPtr<USoundBase> GoodGreetingVoiceover;
 
 	UPROPERTY(BlueprintReadOnly)
 	TSoftObjectPtr<USoundBase> BadGreetingVoiceover;
+
+	/// Replicated string paths for greeting voiceovers.
+	/// TSoftObjectPtr does not replicate directly; we carry the path as FString and
+	/// reconstruct the soft ptr on the client inside OnRep_GreetingVoiceovers().
+	UPROPERTY(ReplicatedUsing=OnRep_GreetingVoiceovers, BlueprintReadOnly)
+	FString GoodGreetingVoiceoverPath;
+
+	UPROPERTY(ReplicatedUsing=OnRep_GreetingVoiceovers, BlueprintReadOnly)
+	FString BadGreetingVoiceoverPath;
+
+	UFUNCTION()
+	void OnRep_GreetingVoiceovers();
 
 	UFUNCTION()
 	virtual void OnRep_DialogData();
@@ -87,6 +102,14 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	void InitDialogFromID(int64 ID);
+
+	/**
+	 * Primary init path for asset-based NPCs.
+	 * Reads greetings and topics directly from the asset (and any SharedTopicAssets),
+	 * with no dependency on UDialogMainComponent or GameMode registration.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void InitDialogFromAsset(UDialogAsset* Asset);
 
 	/// C++-only lookup — returns nullptr when the topic ID is not found.
 	const FDialogTopicStruct* GetDialogTopicSafe(int64 ID) const;
@@ -123,7 +146,22 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnVoiceoverRequested OnVoiceoverRequested;
 
+	/// Fired when an ongoing voiceover should be stopped (dialog closed or new topic clicked).
+	UPROPERTY(BlueprintAssignable)
+	FOnVoiceoverStop OnVoiceoverStop;
+
+	/// Fired alongside OnVoiceoverRequested when the topic has a middleware event name set
+	/// (Wwise/FMOD). Bind this instead of OnVoiceoverRequested when using external audio.
+	UPROPERTY(BlueprintAssignable)
+	FOnMiddlewareVoiceoverRequested OnMiddlewareVoiceoverRequested;
+
 	/// Mark a topic as consumed (for bConsumeOnUse topics).
 	UFUNCTION(BlueprintCallable)
 	void ConsumeTopicByID(int64 TopicID);
+
+private:
+	/// Recursively appends topics from Asset and its SharedTopicAssets into this component's maps.
+	/// Does not touch greetings — the primary asset owns those.
+	/// Visited is threaded through recursion to prevent infinite loops from circular asset references.
+	void AddTopicsFromAsset(UDialogAsset* Asset, TSet<UDialogAsset*>& Visited);
 };

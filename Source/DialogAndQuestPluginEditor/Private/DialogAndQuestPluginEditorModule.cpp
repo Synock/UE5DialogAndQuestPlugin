@@ -5,16 +5,23 @@
 #include "AssetTypeActions/AssetTypeActions_QuestAsset.h"
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
+#include "PropertyEditorModule.h"
+#include "Quest/QuestAsset.h"
+#include "Dialog/DialogAsset.h"
+#include "DetailCustomization/QuestAssetDetailCustomization.h"
+#include "DetailCustomization/DialogAssetDetailCustomization.h"
 
 #define LOCTEXT_NAMESPACE "FDialogAndQuestPluginEditorModule"
 
 void FDialogAndQuestPluginEditorModule::StartupModule()
 {
 	RegisterAssetTypeActions();
+	RegisterDetailCustomizations();
 }
 
 void FDialogAndQuestPluginEditorModule::ShutdownModule()
 {
+	UnregisterDetailCustomizations();
 	UnregisterAssetTypeActions();
 }
 
@@ -45,9 +52,34 @@ void FDialogAndQuestPluginEditorModule::UnregisterAssetTypeActions()
 	RegisteredAssetTypeActions.Empty();
 }
 
+void FDialogAndQuestPluginEditorModule::RegisterDetailCustomizations()
+{
+	FPropertyEditorModule& PropertyModule =
+		FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+	PropertyModule.RegisterCustomClassLayout(
+		UQuestAsset::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FQuestAssetDetailCustomization::MakeInstance));
+
+	PropertyModule.RegisterCustomClassLayout(
+		UDialogAsset::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FDialogAssetDetailCustomization::MakeInstance));
+
+	PropertyModule.NotifyCustomizationModuleChanged();
+}
+
+void FDialogAndQuestPluginEditorModule::UnregisterDetailCustomizations()
+{
+	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	{
+		FPropertyEditorModule& PropertyModule =
+			FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+		PropertyModule.UnregisterCustomClassLayout(UQuestAsset::StaticClass()->GetFName());
+		PropertyModule.UnregisterCustomClassLayout(UDialogAsset::StaticClass()->GetFName());
+	}
+}
+
 #undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FDialogAndQuestPluginEditorModule, DialogAndQuestPluginEditor)
-
-
 

@@ -2,36 +2,37 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "UObject/Object.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogBankWidget.generated.h"
 
-
-class UDialogComponent;
-class UDialogWindow;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCloseBank);
-/**
- *
- */
+
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogBankWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")
+	TObjectPtr<class UButton> CloseButton = nullptr;
+
+	virtual void NativeConstruct() override;
+
+	UFUNCTION() void OnCloseButtonClicked();
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void InitDialog(UDialogWindow* InputParentDialog);
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
+	void InitDialog(UObject* InputParentDialog);
 
-	//Internal function to do stuff when the widget is displayed
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog")
 	void DoOnDisplay();
+	virtual void DoOnDisplay_Implementation() {}
 
-	UPROPERTY(BlueprintAssignable)
-	FOnCloseBank OnClose;
+	UPROPERTY(BlueprintAssignable) FOnCloseBank OnClose;
 };

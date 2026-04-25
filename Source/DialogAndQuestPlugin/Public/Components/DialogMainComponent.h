@@ -68,6 +68,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<FDialogTopicStruct> GetAllDialogTopicForMetaBundle(int64 BundleMetaId) const;
 
+	/// Returns true if a MetaBundle with the given ID has been registered.
+	/// Used by InitDialogFromID to distinguish "MetaBundle not yet loaded" from "loading succeeded".
+	UFUNCTION(BlueprintCallable)
+	bool HasMetaBundle(int64 MetaBundleId) const { return DialogMetaBundle.Contains(MetaBundleId); }
+
 	UFUNCTION(BlueprintCallable)
 	FText GetBadGreeting(int64 BundleMetaId) const;
 

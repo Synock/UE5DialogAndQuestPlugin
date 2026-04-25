@@ -77,7 +77,12 @@ public:
 
 	const TArray<FQuestProgressData>& GetAllKnownQuest() const { return KnownQuestData; }
 
+	/// Returns reference to the quest. Caller MUST check IsQuestKnown() first — asserts in debug.
 	const FQuestProgressData& GetKnownQuest(int64 QuestID) const;
+
+	/// Null-safe variant — returns nullptr if the quest is not known. Prefer this in code paths
+	/// where existence is not guaranteed (e.g., inside RPC handlers).
+	const FQuestProgressData* GetKnownQuestSafe(int64 QuestID) const;
 
 	bool IsQuestKnown(int64 QuestID) const;
 
@@ -145,7 +150,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryProgressAll(AActor* Validator);
 
-	void ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep, bool SkipReward = false);
+	/// @param bSilent  When true, QuestUpdateDispatcher is NOT broadcast. Use during load-time
+	///                step replay to avoid triggering N save calls on login.
+	void ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
+	                   bool SkipReward = false, bool bSilent = false);
 
 	void AddQuest(const FQuestMetaData& QuestMeta);
 

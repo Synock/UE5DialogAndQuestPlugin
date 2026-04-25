@@ -2,31 +2,33 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogTradeWidget.generated.h"
-
-class UDialogComponent;
-class UDialogWindow;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCloseTrade);
 
-/**
- *
- */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogTradeWidget : public UUserWidget
 {
 	GENERATED_BODY()
-protected:
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")
+	TObjectPtr<class UButton> CloseButton = nullptr;
+
+	virtual void NativeConstruct() override;
+
+	UFUNCTION() void OnCloseButtonClicked();
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void InitDialog(UDialogWindow* InputParentDialog);
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
+	void InitDialog(UObject* InputParentDialog);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnCloseTrade OnClose;
+	UPROPERTY(BlueprintAssignable) FOnCloseTrade OnClose;
 };

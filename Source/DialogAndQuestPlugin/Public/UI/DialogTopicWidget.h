@@ -1,37 +1,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DialogTextChunkWidget.h"
-#include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ListView.h"
+#include "Interfaces/DialogWindowInterface.h"
+#include "UI/DialogTextChunkWidget.h"
 #include "DialogTopicWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogTopicWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
+	TObjectPtr<UListView> TopicListView = nullptr;
+
 	void AddTopicData(const FDialogTextData& DialogTopic);
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void ClearList();
 
-
 public:
-	UFUNCTION(BlueprintCallable)
-	void InitDialog(UDialogWindow* InputParentDialog);
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
+	void InitDialog(UObject* InputParentDialog);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
 	void UpdateTopicData();
 };

@@ -1,12 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogHeaderWidget.generated.h"
 
 /**
- * Dialog header widget containing character name, relation info, and action buttons
+ * Dialog header widget containing character name, relation info, and action buttons.
+ * References the parent dialog via IDialogWindowInterface — works with any
+ * implementing class (UDialogWindow, UFinalDialogWindow, or custom).
  */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogHeaderWidget : public UUserWidget
@@ -14,14 +16,25 @@ class DIALOGANDQUESTPLUGIN_API UDialogHeaderWidget : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	// Dialog references
 	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
-	TObjectPtr<UDialogWindow> ParentDialog = nullptr;
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
 
-	// Button widgets - optional bind widgets (may or may not exist in Blueprint)
+	// --- Text displays (BindWidgetOptional so missing blocks are silently skipped) ---
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Text")
+	TObjectPtr<class UTextBlock> NameText = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Text")
+	TObjectPtr<class UTextBlock> RelationValueText = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Text")
+	TObjectPtr<class UTextBlock> RelationStringText = nullptr;
+
+	// --- Action buttons (optional; not all NPCs expose every service) ---
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")
 	TObjectPtr<class UButton> TradeButton = nullptr;
 
@@ -37,55 +50,41 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")
 	TObjectPtr<class UButton> RepairButton = nullptr;
 
-	// UUserWidget interface
 	virtual void NativeConstruct() override;
 
-	// Button click handlers
-	UFUNCTION()
-	void OnTradeButtonClicked();
-
-	UFUNCTION()
-	void OnGiveButtonClicked();
-
-	UFUNCTION()
-	void OnTrainButtonClicked();
-
-	UFUNCTION()
-	void OnBankButtonClicked();
-
-	UFUNCTION()
-	void OnRepairButtonClicked();
+	UFUNCTION() void OnTradeButtonClicked();
+	UFUNCTION() void OnGiveButtonClicked();
+	UFUNCTION() void OnTrainButtonClicked();
+	UFUNCTION() void OnBankButtonClicked();
+	UFUNCTION() void OnRepairButtonClicked();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
-	void InitDialog(UDialogWindow* InputParentDialog);
+	void InitDialog(UObject* InputParentDialog);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Dialog")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog")
 	void SetDialogName(const FString& Name);
+	virtual void SetDialogName_Implementation(const FString& Name);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Dialog")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog")
 	void SetRelationValue(float RelationFloat);
+	virtual void SetRelationValue_Implementation(float RelationFloat);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Dialog")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog")
 	void SetRelationString(const FString& Name);
+	virtual void SetRelationString_Implementation(const FString& Name);
 
-	// Button configuration methods
 	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
 	void ConfigureButtons(bool bCanTrade, bool bCanGive, bool bCanTrain, bool bCanBank, bool bCanRepair);
 
-	// Button getters for DialogWindow compatibility
-	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
-	UButton* GetTradeButton() const { return TradeButton; }
-
-	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
-	UButton* GetGiveButton() const { return GiveButton; }
-
-	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
-	UButton* GetTrainButton() const { return TrainButton; }
-
-	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
-	UButton* GetBankButton() const { return BankButton; }
-
-	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
+	UButton* GetTradeButton()  const { return TradeButton;  }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
+	UButton* GetGiveButton()   const { return GiveButton;   }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
+	UButton* GetTrainButton()  const { return TrainButton;  }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
+	UButton* GetBankButton()   const { return BankButton;   }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
 	UButton* GetRepairButton() const { return RepairButton; }
 };

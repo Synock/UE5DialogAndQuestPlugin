@@ -1,10 +1,17 @@
-
 #include "UI/DialogBankWidget.h"
+#include "Components/Button.h"
 
-#include "UI/DialogWindow.h"
-
-void UDialogBankWidget::InitDialog(UDialogWindow* InputParentDialog)
+void UDialogBankWidget::NativeConstruct()
 {
-	ParentDialog = InputParentDialog;
-	DialogComponent = InputParentDialog->GetDialogComponent();
+	Super::NativeConstruct();
+	if (CloseButton)
+		CloseButton->OnClicked.AddDynamic(this, &UDialogBankWidget::OnCloseButtonClicked);
 }
+
+void UDialogBankWidget::InitDialog(UObject* InputParentDialog)
+{
+	ParentDialogObject = InputParentDialog;
+	DialogComponent    = IDialogWindowInterface::Execute_GetDialogComponent(InputParentDialog);
+}
+
+void UDialogBankWidget::OnCloseButtonClicked() { OnClose.Broadcast(); }

@@ -101,7 +101,8 @@ void UQuestBearerComponent::Server_TryProgressAll_Implementation(AActor* Validat
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep, bool SkipReward)
+void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
+                                           bool SkipReward, bool bSilent)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
@@ -111,6 +112,12 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 
 	FQuestProgressData& QData = KnownQuestData[KnownQuestDataLUT[QuestMeta.QuestID]];
 
+	// Never mutate a terminal quest — Completed and Botched are irreversible.
+	if (QData.IsTerminal())
+		return;
+
+	// For non-repeatable quests: only progress if we're not already past this step.
+	// For repeatable quests: always allow re-progression on the same step.
 	if (NextQuestStep.QuestSubID != QData.ProgressID || QData.Repeatable)
 	{
 		QData.CurrentStep.Completed = true;
@@ -119,37 +126,37 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 			if (IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
 				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardClass);
 
-		if (!QData.Repeatable)
+		// Archive the completed step (for both repeatable and non-repeatable)
+		QData.PreviousStep.Add(QData.CurrentStep);
+		QData.ProgressID = NextQuestStep.QuestSubID;
+
+		FQuestProgressStep NewStepProgress;
+		NewStepProgress.Completed = false;
+		NewStepProgress.StepDescription = NextQuestStep.StepDescription;
+		NewStepProgress.StepTitle = NextQuestStep.StepTitle;
+		NewStepProgress.QuestID = NextQuestStep.QuestID;
+		NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
+		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
+		NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
+		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
+		NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
+
+		if (NextQuestStep.FinishingStep)
 		{
-			QData.PreviousStep.Add(MoveTemp(QData.CurrentStep));
-			QData.ProgressID = NextQuestStep.QuestSubID;
-
-			FQuestProgressStep NewStepProgress;
-			NewStepProgress.Completed = false;
-			NewStepProgress.StepDescription = NextQuestStep.StepDescription;
-			NewStepProgress.StepTitle = NextQuestStep.StepTitle;
-			NewStepProgress.QuestID = NextQuestStep.QuestID;
-			NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
-			NewStepProgress.RewardClass = NextQuestStep.RewardClass;
-			NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
-			NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
-			NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
-
-			if (NextQuestStep.FinishingStep)
-			{
-				NewStepProgress.Completed = true;
-				QData.State = EQuestState::Completed;
-			}
-			else
-			{
-				// If we had been in Achieved state (turned in partial), go back to Accepted
-				if (QData.State == EQuestState::Achieved)
-					QData.State = EQuestState::Accepted;
-			}
-
-			QData.CurrentStep = MoveTemp(NewStepProgress);
-			QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID, QData.State);
+			NewStepProgress.Completed = true;
+			QData.State = EQuestState::Completed;
 		}
+		else
+		{
+			// If we had been in Achieved state (partial turn-in), go back to Accepted
+			if (QData.State == EQuestState::Achieved)
+				QData.State = EQuestState::Accepted;
+		}
+
+		QData.CurrentStep = MoveTemp(NewStepProgress);
+
+		if (!bSilent)
+			QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID, QData.State);
 	}
 
 	OnRep_KnownQuest();
@@ -260,6 +267,16 @@ const FQuestProgressData& UQuestBearerComponent::GetKnownQuest(int64 QuestID) co
 
 //----------------------------------------------------------------------------------------------------------------------
 
+const FQuestProgressData* UQuestBearerComponent::GetKnownQuestSafe(int64 QuestID) const
+{
+	const int32* Index = KnownQuestDataLUT.Find(QuestID);
+	if (!Index || *Index < 0 || *Index >= KnownQuestData.Num())
+		return nullptr;
+	return &KnownQuestData[*Index];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 bool UQuestBearerComponent::IsQuestKnown(int64 QuestID) const
 {
 	return KnownQuestDataLUT.Contains(QuestID);
@@ -303,28 +320,32 @@ bool UQuestBearerComponent::CanValidate(int64 QuestID, int32 StepID) const
 
 bool UQuestBearerComponent::IsBeforeStep(int64 QuestID, int32 StepID) const
 {
-	return GetKnownQuest(QuestID).QuestID > 0 && GetKnownQuest(QuestID).ProgressID < StepID;
+	const FQuestProgressData* Quest = GetKnownQuestSafe(QuestID);
+	return Quest && Quest->QuestID > 0 && Quest->ProgressID < StepID;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 bool UQuestBearerComponent::IsBeforeOrAtStep(int64 QuestID, int32 StepID) const
 {
-	return GetKnownQuest(QuestID).QuestID > 0 && GetKnownQuest(QuestID).ProgressID <= StepID;
+	const FQuestProgressData* Quest = GetKnownQuestSafe(QuestID);
+	return Quest && Quest->QuestID > 0 && Quest->ProgressID <= StepID;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 bool UQuestBearerComponent::IsPastStep(int64 QuestID, int32 StepID) const
 {
-	return GetKnownQuest(QuestID).ProgressID > StepID;
+	const FQuestProgressData* Quest = GetKnownQuestSafe(QuestID);
+	return Quest && Quest->ProgressID > StepID;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 bool UQuestBearerComponent::IsAtOrPastStep(int64 QuestID, int32 StepID) const
 {
-	return GetKnownQuest(QuestID).ProgressID >= StepID;
+	const FQuestProgressData* Quest = GetKnownQuestSafe(QuestID);
+	return Quest && Quest->ProgressID >= StepID;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -493,9 +514,11 @@ void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID,
 	AuthorityAddQuest(QuestID);
 	if (KnownQuestDataLUT.Contains(QuestID))
 	{
+		// Replay steps silently — suppress QuestUpdateDispatcher to avoid triggering
+		// N save calls on login (one per step per quest).
 		for (int32 CurrentStepID = 0; CurrentStepID < StepID; ++CurrentStepID)
 		{
-			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID), true);
+			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID), /*SkipReward=*/true, /*bSilent=*/true);
 		}
 
 		// Apply the requested initial state

@@ -24,15 +24,28 @@ void UQuestMainComponent::BeginPlay()
 
 uint32 UQuestMainComponent::FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep)
 {
+	// Special case: quest just accepted (CurrentStep == -1), return first step
 	if (CurrentStep == -1 && !QuestData.Steps.IsEmpty())
 		return QuestData.Steps[0].QuestSubID;
 
-	for (int32 StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
+	for (int32 i = 0; i < QuestData.Steps.Num(); ++i)
 	{
-		if (QuestData.Steps[StepID].QuestSubID == CurrentStep)
-		{
-			return QuestData.Steps[StepID + 1].QuestSubID;
-		}
+		const FQuestStep& Step = QuestData.Steps[i];
+		if (Step.QuestSubID != CurrentStep)
+			continue;
+
+		// Non-linear step with explicit next IDs — use the first one.
+		// Game code can override which branch to take by calling FindNextStepID with a specific
+		// NextStepID directly; this default picks branch 0.
+		if (Step.StepType != EQuestStepType::Linear && !Step.NextStepIDs.IsEmpty())
+			return static_cast<uint32>(Step.NextStepIDs[0]);
+
+		// Linear: next element in the array
+		if (i + 1 < QuestData.Steps.Num())
+			return QuestData.Steps[i + 1].QuestSubID;
+
+		// Already on the last step
+		return 0;
 	}
 
 	return 0;
@@ -42,14 +55,35 @@ uint32 UQuestMainComponent::FindNextStepID(const FQuestMetaData& QuestData, int3
 
 const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep)
 {
-	for (int32 StepID = 0; StepID < QuestData.Steps.Num() - 1; ++StepID)
+	// Special case: quest just accepted, return first step
+	if (CurrentStep == -1 && !QuestData.Steps.IsEmpty())
+		return QuestData.Steps[0];
+
+	for (int32 i = 0; i < QuestData.Steps.Num(); ++i)
 	{
-		if (QuestData.Steps[StepID].QuestSubID == CurrentStep)
+		const FQuestStep& Step = QuestData.Steps[i];
+		if (Step.QuestSubID != CurrentStep)
+			continue;
+
+		// Non-linear: follow explicit NextStepIDs, find the step by ID
+		if (Step.StepType != EQuestStepType::Linear && !Step.NextStepIDs.IsEmpty())
 		{
-			return QuestData.Steps[StepID + 1];
+			const int32 TargetID = Step.NextStepIDs[0];
+			for (const FQuestStep& Candidate : QuestData.Steps)
+			{
+				if (Candidate.QuestSubID == TargetID)
+					return Candidate;
+			}
 		}
+
+		// Linear: next element in the array
+		if (i + 1 < QuestData.Steps.Num())
+			return QuestData.Steps[i + 1];
+
+		break;
 	}
 
+	// Fallback to first step (should not be reached in well-formed quest data)
 	return QuestData.Steps[0];
 }
 

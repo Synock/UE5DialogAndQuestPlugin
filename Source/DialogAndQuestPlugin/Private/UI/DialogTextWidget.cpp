@@ -1,6 +1,4 @@
-
 #include "UI/DialogTextWidget.h"
-
 #include "Interfaces/DialogDisplayInterface.h"
 
 FString UDialogTextWidget::ProcessText(const FString& InputString) const
@@ -8,11 +6,31 @@ FString UDialogTextWidget::ProcessText(const FString& InputString) const
 	FString ScriptedText = InputString;
 
 	if (const IDialogDisplayInterface* Displayer = Cast<IDialogDisplayInterface>(GetOwningPlayer()))
-	{
 		ScriptedText = Displayer->ProcessScriptedFunction(ScriptedText, GetWorld());
-	}
 
-	return DialogComponent->ParseTextHyperlink(ScriptedText, ParentDialog->GetDialogActor(), GetOwningPlayer());
+	AActor* DialogActor = IDialogWindowInterface::Execute_GetDialogActor(ParentDialogObject.Get());
+	return DialogComponent->ParseTextHyperlink(ScriptedText, DialogActor, GetOwningPlayer());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogTextWidget::ClearList()
+{
+	if (ListViewWidget)
+		ListViewWidget->ClearListItems();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogTextWidget::AddTopicData(const FDialogTextData& DialogTopic)
+{
+	if (!ListViewWidget)
+		return;
+
+	UDialogTextChunkData* Data = NewObject<UDialogTextChunkData>(this);
+	Data->Data   = DialogTopic;
+	Data->Parent = ParentDialogObject;
+	ListViewWidget->AddItem(Data);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -20,17 +38,17 @@ FString UDialogTextWidget::ProcessText(const FString& InputString) const
 void UDialogTextWidget::AddEmptyTopicData(const FString& DialogText)
 {
 	FDialogTextData TextData;
-	TextData.Id = 0;
+	TextData.Id       = 0;
 	TextData.TopicText = ProcessText(DialogText);
 	AddTopicData(TextData);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogTextWidget::InitDialog(UDialogWindow* InputParentDialog)
+void UDialogTextWidget::InitDialog(UObject* InputParentDialog)
 {
-	ParentDialog = InputParentDialog;
-	DialogComponent = InputParentDialog->GetDialogComponent();
+	ParentDialogObject = InputParentDialog;
+	DialogComponent    = IDialogWindowInterface::Execute_GetDialogComponent(InputParentDialog);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -42,9 +60,11 @@ void UDialogTextWidget::AddTopicText(int64 TopicID)
 		return;
 
 	FDialogTextData TextData;
-	TextData.Id = Topic->Id;
-	TextData.TopicName = Topic->Topic;
-	TextData.TopicText = ProcessText(Topic->TopicText.ToString());
+	TextData.Id               = Topic->Id;
+	TextData.TopicName        = Topic->Topic;
+	TextData.TopicText        = ProcessText(Topic->TopicText.ToString());
+	TextData.VoiceoverCue     = Topic->VoiceoverCue;
+	TextData.VoiceoverDuration = Topic->VoiceoverDuration;
 	AddTopicData(TextData);
 }
 

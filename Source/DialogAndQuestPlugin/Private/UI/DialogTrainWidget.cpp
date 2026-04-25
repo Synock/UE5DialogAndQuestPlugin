@@ -1,9 +1,17 @@
-
 #include "UI/DialogTrainWidget.h"
-#include "UI/DialogWindow.h"
+#include "Components/Button.h"
 
-void UDialogTrainWidget::InitDialog(UDialogWindow* InputParentDialog)
+void UDialogTrainWidget::NativeConstruct()
 {
-	ParentDialog = InputParentDialog;
-	DialogComponent = InputParentDialog->GetDialogComponent();
+	Super::NativeConstruct();
+	if (CloseButton)
+		CloseButton->OnClicked.AddDynamic(this, &UDialogTrainWidget::OnCloseButtonClicked);
 }
+
+void UDialogTrainWidget::InitDialog(UObject* InputParentDialog)
+{
+	ParentDialogObject = InputParentDialog;
+	DialogComponent    = IDialogWindowInterface::Execute_GetDialogComponent(InputParentDialog);
+}
+
+void UDialogTrainWidget::OnCloseButtonClicked() { OnClose.Broadcast(); }

@@ -44,6 +44,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Topics")
 	TArray<FDialogTopicStruct> Topics;
 
+	/**
+	 * Shared topic assets whose topics are merged into this NPC's dialog.
+	 *
+	 * Use this to compose dialog from reusable building blocks:
+	 *   - DA_CityLore   — shared world lore, used by every NPC in the city
+	 *   - DA_QuestGiver — shared "I have work for you" opener
+	 *
+	 * At runtime, AddFromAsset() processes each shared asset first (idempotent — safe to
+	 * list the same shared asset in multiple NPC assets), then merges their bundle IDs into
+	 * this asset's MetaBundle. The NPC will see topics from shared assets AND its own Topics[].
+	 *
+	 * Shared assets are loaded synchronously on the server during StartPlay().
+	 * Do NOT create circular references.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Shared")
+	TArray<TSoftObjectPtr<UDialogAsset>> SharedTopicAssets;
+
 #if WITH_EDITORONLY_DATA
 	/// Editor notes — not included in cooked builds.
 	UPROPERTY(EditAnywhere, Category = "Dialog|Editor")

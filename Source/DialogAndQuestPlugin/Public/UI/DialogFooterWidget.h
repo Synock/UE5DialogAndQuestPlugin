@@ -1,25 +1,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DialogWindow.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "DialogFooterWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogFooterWidget : public UUserWidget
 {
 	GENERATED_BODY()
-protected:
-	UPROPERTY(BlueprintReadOnly)
-	UDialogWindow* ParentDialog = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	const UDialogComponent* DialogComponent = nullptr;
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<UObject> ParentDialogObject = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
+	TObjectPtr<const UDialogComponent> DialogComponent = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Buttons")
+	TObjectPtr<class UButton> CloseButton = nullptr;
+
+	virtual void NativeConstruct() override;
+
+	UFUNCTION() void OnCloseButtonClicked();
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void InitDialog(UDialogWindow* InputParentDialog);
+	UFUNCTION(BlueprintCallable, Category = "Dialog")
+	void InitDialog(UObject* InputParentDialog);
 };

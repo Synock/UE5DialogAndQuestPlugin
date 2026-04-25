@@ -1,8 +1,17 @@
 ﻿#include "UI/DialogTradeWidget.h"
-#include "UI/DialogWindow.h"
+#include "Components/Button.h"
 
-void UDialogTradeWidget::InitDialog(UDialogWindow* InputParentDialog)
+void UDialogTradeWidget::NativeConstruct()
 {
-	ParentDialog = InputParentDialog;
-	DialogComponent = InputParentDialog->GetDialogComponent();
+	Super::NativeConstruct();
+	if (CloseButton)
+		CloseButton->OnClicked.AddDynamic(this, &UDialogTradeWidget::OnCloseButtonClicked);
 }
+
+void UDialogTradeWidget::InitDialog(UObject* InputParentDialog)
+{
+	ParentDialogObject = InputParentDialog;
+	DialogComponent    = IDialogWindowInterface::Execute_GetDialogComponent(InputParentDialog);
+}
+
+void UDialogTradeWidget::OnCloseButtonClicked() { OnClose.Broadcast(); }

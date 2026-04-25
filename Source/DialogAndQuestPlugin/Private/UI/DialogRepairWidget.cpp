@@ -1,17 +1,23 @@
 #include "UI/DialogRepairWidget.h"
-#include "UI/DialogWindow.h"
+#include "Components/Button.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogRepairWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (CloseButton)
+		CloseButton->OnClicked.AddDynamic(this, &UDialogRepairWidget::OnCloseButtonClicked);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogRepairWidget::InitDialog(UDialogWindow* InputParentDialog)
+void UDialogRepairWidget::InitDialog(UObject* InputParentDialog)
 {
-	ParentDialog = InputParentDialog;
-	DialogComponent = InputParentDialog->GetDialogComponent();
+	ParentDialogObject = InputParentDialog;
+	DialogComponent    = IDialogWindowInterface::Execute_GetDialogComponent(InputParentDialog);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogRepairWidget::OnCloseButtonClicked() { OnClose.Broadcast(); }

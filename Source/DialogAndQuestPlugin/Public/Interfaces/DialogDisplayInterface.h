@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/DialogWindow.h"
+#include "Interfaces/DialogWindowInterface.h"
 #include "UObject/Interface.h"
 #include "DialogDisplayInterface.generated.h"
 
@@ -24,8 +24,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void TriggerDialogOption(const FString& DialogTopic);
 
+	/**
+	 * Returns the game's dialog window as an IDialogWindowInterface.
+	 * Implement in Blueprint by returning the UFinalDialogWindow (or any custom
+	 * widget that implements IDialogWindowInterface).
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	UDialogWindow* GetDialogWindow() const;
+	TScriptInterface<IDialogWindowInterface> GetDialogWindow() const;
 
 	UFUNCTION(Client, Unreliable)
 	virtual void ForceDisplayTextInDialog(const FString& TextString) = 0;
@@ -33,13 +38,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void CreateDialogWindow(UDialogComponent* DialogComponent, AActor* DialogActor);
 
-	//this function is intended to process custom script within dialog lines, for instance to retrieve player name or whatever
+	/// Process custom script tokens within dialog lines (e.g. %p → player name).
 	virtual FString ProcessScriptedFunction(const FString& InputString, UWorld* WorldContext) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void ToggleQuestJournal();
-	//----------------------------------------------------------------------------------------------------------------------
-
-	//UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	//static void TriggerDialogOption(const FString& DialogTopic);
 };
