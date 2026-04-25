@@ -60,7 +60,7 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
-	void InitDialog(UObject* InputParentDialog);
+	virtual void InitDialog(UObject* InputParentDialog);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Dialog")
 	void SetDialogName(const FString& Name);

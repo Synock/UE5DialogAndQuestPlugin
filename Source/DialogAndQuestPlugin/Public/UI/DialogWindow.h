@@ -126,6 +126,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
 	UDialogRepairWidget* GetRepairWidget() const { return RepairWidgetPointer; }
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogHeaderWidget* GetHeader()    const { return Header;    }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogFooterWidget* GetFooter()    const { return Footer;    }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogTopicWidget*  GetTopicList() const { return TopicList; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogTextWidget*   GetTopicText() const { return TopicText; }
+
 	// Broadcast when the dialog closes (subscribe in game wrappers if needed).
 	UPROPERTY(BlueprintAssignable) FOnExitEvent        OnExit;
 	UPROPERTY(BlueprintAssignable) FOnTradeButtonEvent  OnTrade;

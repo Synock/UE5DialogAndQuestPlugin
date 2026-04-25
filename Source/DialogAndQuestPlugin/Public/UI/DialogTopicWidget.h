@@ -27,7 +27,7 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
-	void InitDialog(UObject* InputParentDialog);
+	virtual void InitDialog(UObject* InputParentDialog);
 
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
 	void UpdateTopicData();

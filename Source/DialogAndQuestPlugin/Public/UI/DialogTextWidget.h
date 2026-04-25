@@ -29,16 +29,16 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void ClearList();
+	virtual void ClearList();
 
 	UFUNCTION(BlueprintCallable)
-	void AddEmptyTopicData(const FString& DialogText);
+	virtual void AddEmptyTopicData(const FString& DialogText);
 
 	UFUNCTION(BlueprintCallable)
-	void InitDialog(UObject* InputParentDialog);
+	virtual void InitDialog(UObject* InputParentDialog);
 
 	UFUNCTION(BlueprintCallable)
-	void AddTopicText(int64 TopicID);
+	virtual void AddTopicText(int64 TopicID);
 
 	/** Reprocess already-displayed text to resolve newly-available hyperlinks. */
 	UFUNCTION(BlueprintCallable)
