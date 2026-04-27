@@ -1,5 +1,6 @@
 #include "UI/DialogHeaderWidget.h"
 #include "Components/Button.h"
+#include "Components/DialogComponent.h"
 #include "Components/TextBlock.h"
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -106,6 +106,22 @@ void FDialogAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Det
 		}
 	}
 
+	// Deprecated numeric Quest ID migration warnings
+	int32 DeprecatedQuestIDCount = 0;
+	for (const FDialogTopicStruct& Topic : Asset->Topics)
+	{
+		const bool bConditionDeprecated  = !Topic.TopicCondition.Quest;
+		const bool bConsequenceDeprecated = !Topic.Consequence.Quest;
+		const bool bMentionDeprecated     = !Topic.Consequence.MentionQuest;
+		if (bConditionDeprecated || bConsequenceDeprecated || bMentionDeprecated)
+			++DeprecatedQuestIDCount;
+	}
+
+	if (DeprecatedQuestIDCount > 0)
+		Warnings.Add(FString::Printf(
+			TEXT("%d topic(s) still use deprecated numeric Quest IDs. Open each topic and assign the Quest asset pointer instead."),
+			DeprecatedQuestIDCount));
+
 	if (Warnings.IsEmpty())
 		return;
 

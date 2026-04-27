@@ -64,21 +64,26 @@ bool FRichInlineHyperlinkDecorator::Supports(const FTextRunParseResults& RunPars
 TSharedPtr<SWidget> FRichInlineHyperlinkDecorator::CreateDecoratorWidget(
 	const FTextRunInfo& RunInfo, const FTextBlockStyle& TextStyle) const
 {
+	// The delegate map is keyed by the 'id' attribute (set in Supports()), NOT by the
+	// visible content. For multi-word topics the two differ, so always look up by id.
+	const FString* IDPtr = RunInfo.MetaData.Find(TEXT("id"));
+	const FString LookupKey = IDPtr ? *IDPtr : RunInfo.Content.ToString();
+
 	TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> Model = MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
 	TSharedPtr<SRichTextHyperlink> Link;
-	if (DelegateMap.Contains(RunInfo.Content.ToString()))
+	if (DelegateMap.Contains(LookupKey))
 	{
 		Link = SNew(SRichTextHyperlink, Model.ToSharedRef())
 		   .Text(RunInfo.Content)
 		   .Style(&LinkStyle)
-		   .OnNavigate(*DelegateMap.Find(RunInfo.Content.ToString()));
+		   .OnNavigate(*DelegateMap.Find(LookupKey));
 	}
 	else
 	{
 		Link = SNew(SRichTextHyperlink, Model.ToSharedRef())
 		  .Text(RunInfo.Content)
 		  .Style(&LinkStyle)
-		.OnNavigate(Delegate);
+		  .OnNavigate(Delegate);
 	}
 
 	return Link;

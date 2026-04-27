@@ -4,7 +4,7 @@
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Sound/SoundBase.h"
-#include "Quest/QuestData.h"
+#include "Quest/QuestAsset.h"   // replaces direct QuestData.h — covers all quest types + UQuestAsset
 #include "DialogData.generated.h"
 
 /**
@@ -89,9 +89,14 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/// Quest ID this condition checks against. 0 = no quest condition.
+	/// Quest asset this condition checks against. Null = no quest condition.
+	/// Replaces the deprecated numeric QuestId field — pick the asset from the picker.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
-	int64 QuestId = 0;
+	TObjectPtr<UQuestAsset> Quest = nullptr;
+
+	/// Returns the effective quest ID: Quest->QuestID if an asset is assigned,
+	/// otherwise falls back to QuestId_DEPRECATED for backward compatibility.
+	int64 GetQuestID() const { return Quest ? Quest->QuestID : 0; }
 
 	/// Minimum step ID for step-based condition (legacy). Used with StepCondition.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
@@ -135,9 +140,13 @@ struct FDialogConsequence : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/// Quest ID to transition or advance. 0 = no quest consequence.
+	/// Quest asset to transition or advance. Null = no quest consequence.
+	/// Replaces the deprecated numeric QuestID field — pick the asset from the picker.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Quest")
-	int64 QuestID = 0;
+	TObjectPtr<UQuestAsset> Quest = nullptr;
+
+	/// Returns the effective quest ID for state transitions / step advancement.
+	int64 GetQuestID() const { return Quest ? Quest->QuestID : 0; }
 
 	/// New quest state to set when this topic is clicked.
 	/// Unknown = no state change.
@@ -157,14 +166,17 @@ struct FDialogConsequence : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Faction")
 	float FactionDelta = 0.f;
 
-	/// Quest ID to "mention" (set to Mentioned state). 0 = none.
+	/// Quest asset to "mention" (set to Mentioned state). Null = none.
 	/// Implements quest discovery through conversation.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Quest")
-	int64 MentionQuestID = 0;
+	TObjectPtr<UQuestAsset> MentionQuest = nullptr;
+
+	/// Returns the effective mention-quest ID.
+	int64 GetMentionQuestID() const { return MentionQuest ? MentionQuest->QuestID : 0; }
 
 	bool HasConsequence() const
 	{
-		return QuestID != 0 || FactionDelta != 0.f || MentionQuestID != 0;
+		return GetQuestID() != 0 || FactionDelta != 0.f || GetMentionQuestID() != 0;
 	}
 };
 
@@ -177,7 +189,11 @@ struct FDialogTopicStruct : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog")
 	int64 Id = 0;
 
-	/// The keyword that the player clicks on in dialog text.
+	/// The keyword (or multi-word phrase) that the player clicks on in dialog text.
+	/// The hyperlink scanner performs a longest-match search, so multi-word topics
+	/// such as "lost sword" are matched before any single-word sub-key.
+	/// Matching is case-insensitive; the original casing from the dialog text is
+	/// preserved in the displayed hyperlink.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog")
 	FString Topic;
 

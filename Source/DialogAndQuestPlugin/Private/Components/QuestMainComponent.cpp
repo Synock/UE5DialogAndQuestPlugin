@@ -119,6 +119,11 @@ void UQuestMainComponent::AddQuestFromAsset(UQuestAsset* QuestAsset)
 	if (!QuestAsset)
 		return;
 
+	// Idempotent — safe to call multiple times for the same asset/class (e.g., during
+	// auto-scan at StartPlay and again in SpawnNPC for runtime-spawned actors).
+	if (QuestList.Contains(QuestAsset->QuestID))
+		return;
+
 	AddQuest(QuestAsset->ToQuestMetaData());
 }
 

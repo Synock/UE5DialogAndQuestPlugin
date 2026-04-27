@@ -51,7 +51,7 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 	}
 
 	// Quest condition
-	if (QuestId != 0)
+	if (GetQuestID() != 0)
 	{
 		const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller);
 		if (!QuestBearer)
@@ -63,13 +63,13 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 		// If the quest is not known at all:
 		// - A state filter can only pass for Unknown (which means "no filter")
 		// - A step filter always fails (CanDisplay returns false for unknown quests)
-		if (!QuestBearer->IsQuestKnown(QuestId))
+		if (!QuestBearer->IsQuestKnown(GetQuestID()))
 			return false;
 
 		// State-based check
 		if (bHasStateFilter)
 		{
-			const FQuestProgressData& Progress = QuestBearer->GetKnownQuest(QuestId);
+			const FQuestProgressData& Progress = QuestBearer->GetKnownQuest(GetQuestID());
 			if (Progress.State != RequiredQuestState)
 				return false;
 		}
@@ -77,11 +77,11 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 		// Step-based check (combined with state when both are set)
 		if (bHasStepFilter)
 		{
-			if (!QuestBearer->CanDisplay(QuestId, MinimumStepID, StepCondition))
+			if (!QuestBearer->CanDisplay(GetQuestID(), MinimumStepID, StepCondition))
 				return false;
 		}
 
-		// If neither filter was set (QuestId != 0 but no state/step), just require quest to be known
+		// If neither filter was set (quest != null but no state/step), just require quest to be known
 		return bRelationOK;
 	}
 

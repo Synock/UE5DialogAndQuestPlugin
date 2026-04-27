@@ -187,11 +187,20 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 	}
 	else
 	{
-		// Quest already exists — if it was only Mentioned, transition to Accepted
+		// Quest already exists in the player's journal.
 		FQuestProgressData& Existing = KnownQuestData[KnownQuestDataLUT[QuestMeta.QuestID]];
-		if (Existing.State == EQuestState::Mentioned)
+
+		// Transition to Accepted when:
+		//   - Quest was only Mentioned (formal accept)
+		//   - Quest is Completed and marked Repeatable (repeat cycle reset)
+		const bool bShouldReset = Existing.State == EQuestState::Mentioned ||
+			(Existing.Repeatable && Existing.State == EQuestState::Completed);
+
+		if (bShouldReset)
 		{
 			Existing.State = EQuestState::Accepted;
+			Existing.ProgressID = 0;
+			Existing.PreviousStep.Empty();
 			if (!QuestMeta.Steps.IsEmpty())
 				Existing.CurrentStep = FQuestProgressStep(QuestMeta.Steps[0]);
 			QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID, 0, EQuestState::Accepted);

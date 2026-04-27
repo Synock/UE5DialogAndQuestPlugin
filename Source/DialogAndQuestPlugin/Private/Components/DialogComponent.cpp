@@ -27,8 +27,9 @@ void UDialogComponent::OnRep_DialogData()
 	for (auto& DialogData : DialogTopicData)
 	{
 		DialogTopic.FindOrAdd(DialogData.Id, DialogData);
-		DialogTopicLUT.FindOrAdd(DialogData.Topic, DialogData.Id);
+		DialogTopicLUT.FindOrAdd(DialogData.Topic.ToLower(), DialogData.Id);
 	}
+	MarkTopicKeysDirty();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -117,8 +118,9 @@ void UDialogComponent::AddTopicsFromAsset(UDialogAsset* Asset, TSet<UDialogAsset
 			DialogTopicData.Add(Topic);
 		}
 		DialogTopic.Add(Topic.Id, Topic);
-		DialogTopicLUT.Add(Topic.Topic, Topic.Id);
+		DialogTopicLUT.Add(Topic.Topic.ToLower(), Topic.Id);
 	}
+	MarkTopicKeysDirty();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -160,8 +162,9 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 	{
 		DialogTopicData.Add(DialogData);
 		DialogTopic.FindOrAdd(DialogData.Id, DialogData);
-		DialogTopicLUT.FindOrAdd(DialogData.Topic, DialogData.Id);
+		DialogTopicLUT.FindOrAdd(DialogData.Topic.ToLower(), DialogData.Id);
 	}
+	MarkTopicKeysDirty();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -193,7 +196,8 @@ FDialogTopicStruct UDialogComponent::GetDialogTopicByID(int64 ID, bool& bFound) 
 
 int64 UDialogComponent::GetDialogTopicID(const FString& ID) const
 {
-	if (const int64* Found = DialogTopicLUT.Find(ID))
+	// LUT keys are stored lowercase — normalize the lookup to match.
+	if (const int64* Found = DialogTopicLUT.Find(ID.ToLower()))
 		return *Found;
 
 	return 0;
@@ -201,55 +205,121 @@ int64 UDialogComponent::GetDialogTopicID(const FString& ID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogComponent::RebuildSortedTopicKeysIfNeeded() const
+{
+	if (!bTopicKeysDirty)
+		return;
+
+	SortedTopicKeys.Empty(DialogTopicLUT.Num());
+	for (const auto& Pair : DialogTopicLUT)
+		SortedTopicKeys.Add(Pair.Key);
+
+	// Longest key first — ensures multi-word phrases are matched before any
+	// single-word sub-match (e.g. "lost sword" is tested before "lost").
+	SortedTopicKeys.Sort([](const FString& A, const FString& B)
+	{
+		return A.Len() > B.Len();
+	});
+
+	bTopicKeysDirty = false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 FString UDialogComponent::ParseTextHyperlink(const FString& OriginalString, const AActor* DialogActor,
                                              const APlayerController* Controller) const
 {
-	FString ActualOut;
-	TArray<FString> Out;
-	OriginalString.ParseIntoArray(Out, TEXT(" "), true);
+	RebuildSortedTopicKeysIfNeeded();
 
-	for (const auto& Word : Out)
+	// Returns true for characters that are valid word boundaries (whitespace or punctuation).
+	auto IsBoundary = [](TCHAR C) -> bool
 	{
-		if (Word.IsEmpty())
+		return FChar::IsWhitespace(C)
+			|| C == '.' || C == ',' || C == '!' || C == '?' || C == ':' || C == ';';
+	};
+
+	const int32 TextLen = OriginalString.Len();
+	FString Result;
+	Result.Reserve(TextLen * 2); // over-estimate to avoid reallocations from markup
+
+	int32 Pos = 0;
+	while (Pos < TextLen)
+	{
+		// Only try to match a topic keyword at word-start positions.
+		const bool bAtWordStart = (Pos == 0) || IsBoundary(OriginalString[Pos - 1]);
+
+		bool bMatched = false;
+		if (bAtWordStart)
 		{
-			ActualOut += TEXT(" ");
-			continue;
-		}
-
-		FString LocalWord = Word;
-		TCHAR SupChar = 0;
-
-		const TCHAR LastChar = Word[Word.Len() - 1];
-		if (LastChar == '.' || LastChar == ',' || LastChar == '!' || LastChar == ':' || LastChar == '?')
-		{
-			SupChar = LastChar;
-			LocalWord = Word.Mid(0, Word.Len() - 1);
-		}
-
-		if (!LocalWord.IsEmpty() && DialogTopicLUT.Contains(LocalWord))
-		{
-			const int64* TopicIDPtr = DialogTopicLUT.Find(LocalWord);
-			const FDialogTopicStruct* TopicPtr = TopicIDPtr ? DialogTopic.Find(*TopicIDPtr) : nullptr;
-
-			if (TopicPtr && TopicPtr->TopicCondition.VerifyCondition(DialogActor, Controller))
+			for (const FString& Key : SortedTopicKeys)
 			{
-				ActualOut += FString::Printf(TEXT("<DialogLink id=\"%s\">%s</>"), *LocalWord, *LocalWord);
+				// Keys are stored lowercase; Key.Len() == the original topic length.
+				const int32 KeyLen = Key.Len();
+				if (KeyLen == 0 || Pos + KeyLen > TextLen)
+					continue;
+
+				// Quick first-char reject using lowercase comparison.
+				if (FChar::ToLower(OriginalString[Pos]) != Key[0])
+					continue;
+
+				// Full case-insensitive substring comparison.
+				if (OriginalString.Mid(Pos, KeyLen).ToLower() != Key)
+					continue;
+
+				// Verify the matched phrase ends at a word boundary.
+				const int32 AfterPos = Pos + KeyLen;
+				TCHAR SupChar = 0;   // trailing punctuation to re-emit after </>
+				int32 AdvanceExtra = 0;
+
+				if (AfterPos == TextLen)
+				{
+					// End of string — valid boundary, nothing to capture.
+				}
+				else if (FChar::IsWhitespace(OriginalString[AfterPos]))
+				{
+					// Space follows — valid boundary; space will be copied in next iteration.
+				}
+				else if (IsBoundary(OriginalString[AfterPos]))
+				{
+					// Non-space punctuation (e.g. ',' or '.') — capture it so it appears
+					// after </> in the output, then skip it in the main loop.
+					SupChar      = OriginalString[AfterPos];
+					AdvanceExtra = 1;
+				}
+				else
+				{
+					// Mid-word — not a real boundary; reject this key.
+					continue;
+				}
+
+				// Condition gate — respect quest-state / relation / item requirements.
+				// LUT key is lowercase; Key is already lowercase.
+				const int64* TopicIDPtr = DialogTopicLUT.Find(Key);
+				const FDialogTopicStruct* TopicPtr = TopicIDPtr ? DialogTopic.Find(*TopicIDPtr) : nullptr;
+				if (!TopicPtr || !TopicPtr->TopicCondition.VerifyCondition(DialogActor, Controller))
+					continue; // condition failed; fall through to plain-text copy
+
+				// id attribute = lowercase key (for LUT lookup on click).
+				// Visible content = original-case text from the author's dialog string.
+				const FString OriginalText = OriginalString.Mid(Pos, KeyLen);
+				Result += FString::Printf(TEXT("<DialogLink id=\"%s\">%s</>"), *Key, *OriginalText);
 				if (SupChar != 0)
-					ActualOut += SupChar;
+					Result += SupChar;
+
+				Pos += KeyLen + AdvanceExtra;
+				bMatched = true;
+				break;
 			}
-			else
-			{
-				ActualOut += Word;
-			}
-		}
-		else
-		{
-			ActualOut += Word;
 		}
 
-		ActualOut += TEXT(" ");
+		if (!bMatched)
+		{
+			Result += OriginalString[Pos];
+			++Pos;
+		}
 	}
-	return ActualOut;
+
+	return Result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -263,11 +333,13 @@ void UDialogComponent::ConsumeTopicByID(int64 TopicID)
 	{
 		if (DialogTopicData[i].Id == TopicID)
 		{
-			DialogTopicLUT.Remove(DialogTopicData[i].Topic);
+			// LUT keys are lowercase — normalize the removal key to match.
+			DialogTopicLUT.Remove(DialogTopicData[i].Topic.ToLower());
 			DialogTopicData.RemoveAt(i);
 			break;
 		}
 	}
+	MarkTopicKeysDirty();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

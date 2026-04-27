@@ -36,12 +36,9 @@ void AAreaQuestValidator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (QuestComponent)
+	if (QuestComponent && QuestAsset && QuestAsset->QuestID != 0)
 	{
-		if (ValidatableSteps.QuestID != 0)
-		{
-			QuestComponent->AddValidatableSteps(ValidatableSteps.QuestID, ValidatableSteps.Steps);
-		}
+		QuestComponent->AddValidatableSteps(QuestAsset->QuestID, {StepID});
 	}
 }
 
@@ -62,6 +59,9 @@ bool AAreaQuestValidator::TryProgressQuest(AActor* OtherActor)
 	if (!HasAuthority())
 		return false;
 
+	if (!QuestAsset || QuestAsset->QuestID == 0)
+		return false;
+
 	const APawn* ActorAsPawn = Cast<APawn>(OtherActor);
 	if (!ActorAsPawn)
 		return false;
@@ -75,5 +75,5 @@ bool AAreaQuestValidator::TryProgressQuest(AActor* OtherActor)
 		return false;
 
 
-	return QuestBearerInterface->GetQuestBearerComponent()->Authority_TryProgressQuest(ValidatableSteps.QuestID,this);
+	return QuestBearerInterface->GetQuestBearerComponent()->Authority_TryProgressQuest(QuestAsset->QuestID, this);
 }

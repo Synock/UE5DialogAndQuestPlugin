@@ -164,4 +164,16 @@ private:
 	/// Does not touch greetings — the primary asset owns those.
 	/// Visited is threaded through recursion to prevent infinite loops from circular asset references.
 	void AddTopicsFromAsset(UDialogAsset* Asset, TSet<UDialogAsset*>& Visited);
+
+	/// Sorted topic keyword cache for longest-match hyperlink parsing.
+	/// Rebuilt lazily whenever DialogTopicLUT changes.
+	mutable TArray<FString> SortedTopicKeys;
+	mutable bool bTopicKeysDirty = true;
+
+	/// Marks the sorted-key cache as stale. Call whenever DialogTopicLUT is modified.
+	void MarkTopicKeysDirty() { bTopicKeysDirty = true; }
+
+	/// Rebuilds SortedTopicKeys from DialogTopicLUT if bTopicKeysDirty is set.
+	/// Keys are sorted longest-first so multi-word phrases beat any sub-word match.
+	void RebuildSortedTopicKeysIfNeeded() const;
 };

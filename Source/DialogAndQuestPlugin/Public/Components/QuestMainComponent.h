@@ -55,4 +55,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	bool TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator);
+
+	/// Returns the number of quest definitions currently registered.
+	/// Used for startup log messages; also useful for editor debugging.
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	int32 GetRegisteredQuestCount() const { return QuestList.Num(); }
 };

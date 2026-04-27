@@ -4,6 +4,7 @@
 #include "Components/BoxComponent.h"
 #include "Engine/TriggerVolume.h"
 #include "Interfaces/QuestGiverInterface.h"
+#include "Quest/QuestAsset.h"
 #include "AreaQuestValidator.generated.h"
 
 UCLASS(Blueprintable)
@@ -25,8 +26,13 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	TObjectPtr<UQuestGiverComponent> QuestComponent = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FQuestValidatableSteps ValidatableSteps;
+	/// Quest this area validates. The validator will auto-register StepID at BeginPlay.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	TObjectPtr<UQuestAsset> QuestAsset = nullptr;
+
+	/// The single step ID this trigger area validates.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	int32 StepID = 0;
 
 	UFUNCTION()
 	void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
