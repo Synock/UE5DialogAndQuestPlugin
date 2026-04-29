@@ -1,9 +1,21 @@
-
 #include "UI/QuestJournal/QuestJournalButtonWidget.h"
+#include "UI/QuestJournal/QuestJournalWindow.h"
+#include "Quest/QuestData.h"
 
-void UQuestJournalButtonWidget::InitParent(UQuestJournalWindow* Parent)
+void UQuestJournalButtonWidget::NativeConstruct()
 {
-	ParentJournal = Parent;
+	Super::NativeConstruct();
+
+	if (QuestButton)
+		QuestButton->OnClicked.AddDynamic(this, &UQuestJournalButtonWidget::SelectQuest);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestJournalButtonWidget::SelectQuest()
+{
+	if (ParentJournal)
+		ParentJournal->DisplayQuest(LocalData.QuestID);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -12,10 +24,15 @@ void UQuestJournalButtonWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
-	if (const UQuestJournalTitleData* Data = Cast<UQuestJournalTitleData>(ListItemObject))
-	{
-		LocalData = Data->Data;
-		ParentJournal = Data->Parent;
-		InitData(Data->Data);
-	}
+	const UQuestJournalTitleData* Data = Cast<UQuestJournalTitleData>(ListItemObject);
+	if (!Data)
+		return;
+
+	LocalData   = Data->Data;
+	ParentJournal = Data->Parent;
+
+	if (QuestTitleText)
+		QuestTitleText->SetText(LocalData.QuestTitle);
+
+	OnButtonRefreshed(LocalData);
 }

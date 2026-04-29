@@ -3,11 +3,19 @@
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/RichTextBlock.h"
 #include "Quest/QuestData.h"
 #include "QuestJournalStepWidget.generated.h"
 
 /**
+ * List entry widget representing a single quest step on the journal details page.
  *
+ * ## BindWidget requirements (Blueprint must have these exact names):
+ *   - "StepTitleText"       (URichTextBlock) — completed → <Strike>, active → <Bold>
+ *   - "StepDescriptionText" (URichTextBlock) — completed → <Strike>, active → plain
+ *
+ * ## Blueprint extension:
+ *   Override OnStepRefreshed for additional visual polish after C++ populates both fields.
  */
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UQuestJournalStepWidget : public UUserWidget, public IUserObjectListEntry
@@ -15,24 +23,29 @@ class DIALOGANDQUESTPLUGIN_API UQuestJournalStepWidget : public UUserWidget, pub
 	GENERATED_BODY()
 
 protected:
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void InitData(const FQuestProgressStep& ItemData);
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Journal|Widgets")
+	TObjectPtr<URichTextBlock> StepTitleText = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
-	int64 ItemID = 0;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Journal|Widgets")
+	TObjectPtr<URichTextBlock> StepDescriptionText = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "Journal")
 	FQuestProgressStep LocalData;
 
-	UPROPERTY(BlueprintReadOnly)
-	UQuestJournalWindow* ParentJournal = nullptr;
+	UPROPERTY(BlueprintReadOnly, Category = "Journal")
+	TObjectPtr<class UQuestJournalWindow> ParentJournal = nullptr;
 
-public:
+	/** Called after C++ populates both text fields. Override in Blueprint for visual polish. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Journal")
+	void OnStepRefreshed(const FQuestProgressStep& StepData);
+	virtual void OnStepRefreshed_Implementation(const FQuestProgressStep& StepData) {}
+
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
-	UFUNCTION(BlueprintCallable)
+public:
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Journal|Text")
 	static FString GetStrike(const FString& OriginalString);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Journal|Text")
 	static FString GetBold(const FString& OriginalString);
 };

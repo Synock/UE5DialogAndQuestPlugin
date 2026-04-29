@@ -174,6 +174,7 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 		FQuestProgressData NewQuestData;
 		NewQuestData.Repeatable = QuestMeta.Repeatable;
 		NewQuestData.QuestTitle = QuestMeta.QuestTitle;
+		NewQuestData.QuestDescription = QuestMeta.QuestDescription;
 		NewQuestData.MentionedDescription = QuestMeta.MentionedDescription;
 		NewQuestData.QuestID = QuestMeta.QuestID;
 		NewQuestData.ProgressID = 0;
@@ -390,6 +391,7 @@ void UQuestBearerComponent::MentionQuest(int64 QuestID)
 	FQuestProgressData NewQuestData;
 	NewQuestData.QuestID = QuestData.QuestID;
 	NewQuestData.QuestTitle = QuestData.QuestTitle;
+	NewQuestData.QuestDescription = QuestData.QuestDescription;
 	NewQuestData.MentionedDescription = QuestData.MentionedDescription;
 	NewQuestData.Repeatable = QuestData.Repeatable;
 	NewQuestData.State = EQuestState::Mentioned;

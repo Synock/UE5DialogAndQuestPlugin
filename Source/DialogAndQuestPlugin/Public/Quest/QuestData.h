@@ -273,6 +273,10 @@ struct FQuestProgressData
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FQuestProgressStep> PreviousStep;
 
+	/// Full quest description shown once the quest is accepted (mirrors FQuestMetaData::QuestDescription).
+	UPROPERTY(BlueprintReadOnly)
+	FText QuestDescription;
+
 	/// True if the quest is in a terminal state (Completed or Botched).
 	bool IsTerminal() const { return State == EQuestState::Completed || State == EQuestState::Botched; }
 
@@ -297,6 +301,27 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	class UQuestJournalWindow* Parent = nullptr;
 };
+
+/// Journal display categories — groups EQuestState values into the three book tabs.
+UENUM(BlueprintType)
+enum class EQuestJournalCategory : uint8
+{
+	Active   UMETA(DisplayName = "Active"),    ///< Accepted + Achieved
+	Finished UMETA(DisplayName = "Finished"),  ///< Completed + Botched
+	Rumored  UMETA(DisplayName = "Rumored"),   ///< Mentioned
+};
+
+/// Maps a quest state to its journal category.
+inline EQuestJournalCategory GetQuestJournalCategory(EQuestState State)
+{
+	switch (State)
+	{
+	case EQuestState::Mentioned:  return EQuestJournalCategory::Rumored;
+	case EQuestState::Completed:
+	case EQuestState::Botched:    return EQuestJournalCategory::Finished;
+	default:                      return EQuestJournalCategory::Active;
+	}
+}
 
 ///@brief Quest step entry for journal step display
 UCLASS(BlueprintType)
