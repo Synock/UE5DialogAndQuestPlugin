@@ -188,7 +188,22 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 	}
 
 	const int32 NextQuestStep = FindNextStepID(CurrentQuest, CurrentStepID);
-	if (QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(QuestID, NextQuestStep))
+
+	// For the initial accept (CurrentStepID == -1) we check whether the NPC can give the first
+	// step (NextQuestStep == Steps[0]).  For all subsequent progressions we check the step the
+	// player is COMPLETING (CurrentStepID), not the step they are moving TO (NextQuestStep).
+	// Using NextQuestStep for progression is wrong: on the finishing step FindNextStepID returns
+	// 0 (the repeat-cycle sentinel), so the check would require the NPC to also have step 0 in
+	// its validatable list — causing "impossible quest state" even when the NPC is correctly
+	// configured to validate only the finishing step.
+	const int32 ValidatorStepID = (CurrentStepID == -1) ? NextQuestStep : CurrentStepID;
+
+	const bool bCanValidate = QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(QuestID, ValidatorStepID);
+	UDialogAndQuestPluginHelper::Log(FString::Printf(
+		TEXT("TryProgressQuest QID=%lld CurrentStep=%d NextStep=%d ValidatorStep=%d CanValidate=%d"),
+		QuestID, CurrentStepID, NextQuestStep, ValidatorStepID, bCanValidate));
+
+	if (bCanValidate)
 	{
 		if (CurrentStepID == -1)
 		{
@@ -210,7 +225,9 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		return true;
 	}
 
-	FString WarningMessage = "Tried to validate an impossible quest state QID: " + FString::FormatAsNumber(CurrentQuest.QuestID) + " Current step : " + FString::FormatAsNumber(CurrentStepID);
+	FString WarningMessage = FString::Printf(
+		TEXT("TryProgressQuest: cannot validate QID=%lld CurrentStep=%d ValidatorStep=%d — NPC lacks this step in its validatable list"),
+		QuestID, CurrentStepID, ValidatorStepID);
 	UDialogAndQuestPluginHelper::Warning(WarningMessage);
 	return false;
 

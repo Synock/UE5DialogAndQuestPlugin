@@ -1,4 +1,3 @@
-
 #include "Components/QuestBearerComponent.h"
 
 #include "GameFramework/GameModeBase.h"
@@ -118,6 +117,12 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 
 	// For non-repeatable quests: only progress if we're not already past this step.
 	// For repeatable quests: always allow re-progression on the same step.
+	// Log before the gate so we always know whether it passed.
+	UDialogAndQuestPluginHelper::Log(FString::Printf(
+		TEXT("ProgressQuest QID=%lld: NextSubID=%d ProgressID=%d Repeatable=%d FinishingStep=%d State=%d"),
+		QuestMeta.QuestID, NextQuestStep.QuestSubID, QData.ProgressID, QData.Repeatable,
+		QData.CurrentStep.FinishingStep, static_cast<int32>(QData.State)));
+
 	if (NextQuestStep.QuestSubID != QData.ProgressID || QData.Repeatable)
 	{
 		QData.CurrentStep.Completed = true;
@@ -141,7 +146,13 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
 		NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
 
-		if (NextQuestStep.FinishingStep)
+		// Completion is driven by the step the player JUST COMPLETED, now archived as
+		// PreviousStep.Last(), NOT by the destination step (NextQuestStep).
+		// The old check (NextQuestStep.FinishingStep) caused multi-step quests to become
+		// Completed the instant the first turn-in placed the player on the finishing step —
+		// making it terminal before the finishing step's own items were turned in, so the
+		// finishing step's reward was never granted.
+		if (QData.PreviousStep.Last().FinishingStep)
 		{
 			NewStepProgress.Completed = true;
 			QData.State = EQuestState::Completed;
