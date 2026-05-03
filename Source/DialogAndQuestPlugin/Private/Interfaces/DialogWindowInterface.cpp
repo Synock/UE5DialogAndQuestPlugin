@@ -5,9 +5,6 @@
 #include "Engine/AssetManager.h"
 #include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogDisplayInterface.h"
-#include "Interfaces/QuestBearerInterface.h"
-#include "Interfaces/QuestGiverInterface.h"
-#include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
 // ---- InitDialogWindow -------------------------------------------------------
@@ -120,21 +117,6 @@ void IDialogWindowInterface::DisplayDialogTopic_Implementation(int64 ID)
 	if (!Topic.VoiceoverEventName.IsNone())
 		Comp->OnMiddlewareVoiceoverRequested.Broadcast(Topic.VoiceoverEventName);
 
-	// Legacy quest-relation (backward compat with QuestRelation field on topic structs).
-	if (IQuestGiverInterface* GiverIF = Cast<IQuestGiverInterface>(Actor))
-	{
-		if (IQuestBearerInterface* BearerIF = Cast<IQuestBearerInterface>(PC))
-		{
-			if (Topic.QuestRelation.QuestID != 0)
-			{
-				for (const auto& StepData : Topic.QuestRelation.Steps)
-				{
-					if (BearerIF->CanValidate(Topic.QuestRelation.QuestID, StepData))
-						BearerIF->TryProgressQuest(Topic.QuestRelation.QuestID, Actor);
-				}
-			}
-		}
-	}
 
 	Execute_RefreshDialogOptions(Self);
 }

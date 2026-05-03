@@ -106,20 +106,31 @@ void FDialogAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Det
 		}
 	}
 
-	// Deprecated numeric Quest ID migration warnings
+	// Deprecated numeric Quest ID migration warnings.
+	// Only flag topics that have quest-driven fields populated but are missing the asset pointer —
+	// topics with no quest involvement at all are not flagged.
 	int32 DeprecatedQuestIDCount = 0;
 	for (const FDialogTopicStruct& Topic : Asset->Topics)
 	{
-		const bool bConditionDeprecated  = !Topic.TopicCondition.Quest;
-		const bool bConsequenceDeprecated = !Topic.Consequence.Quest;
-		const bool bMentionDeprecated     = !Topic.Consequence.MentionQuest;
-		if (bConditionDeprecated || bConsequenceDeprecated || bMentionDeprecated)
+		// Condition side: topic has a quest state or step filter but no Quest asset.
+		const bool bHasConditionQuestData =
+			Topic.TopicCondition.RequiredQuestState != EQuestState::Unknown ||
+			Topic.TopicCondition.MinimumStepID != 0;
+		const bool bConditionDeprecated = bHasConditionQuestData && !Topic.TopicCondition.Quest;
+
+		// Consequence side: topic changes quest state or advances a step but no Quest asset.
+		const bool bHasConsequenceQuestData =
+			Topic.Consequence.NewQuestState != EQuestState::Unknown ||
+			Topic.Consequence.bAdvanceStep;
+		const bool bConsequenceDeprecated = bHasConsequenceQuestData && !Topic.Consequence.Quest;
+
+		if (bConditionDeprecated || bConsequenceDeprecated)
 			++DeprecatedQuestIDCount;
 	}
 
 	if (DeprecatedQuestIDCount > 0)
 		Warnings.Add(FString::Printf(
-			TEXT("%d topic(s) still use deprecated numeric Quest IDs. Open each topic and assign the Quest asset pointer instead."),
+			TEXT("%d topic(s) still use deprecated numeric Quest IDs. Open each Topic and assign the Quest asset pointer."),
 			DeprecatedQuestIDCount));
 
 	if (Warnings.IsEmpty())

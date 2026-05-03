@@ -1,12 +1,10 @@
 #include "UI/DialogWindow.h"
 
-#include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 #include "Engine/AssetManager.h"
 #include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
-#include "Interfaces/QuestGiverInterface.h"
 #include "UI/DialogBankWidget.h"
 #include "UI/DialogFooterWidget.h"
 #include "UI/DialogGiveWidget.h"
@@ -200,20 +198,6 @@ void UDialogWindow::DisplayDialogTopic_Implementation(int64 ID)
 	if (!Topic.VoiceoverEventName.IsNone())
 		DialogComponent->OnMiddlewareVoiceoverRequested.Broadcast(Topic.VoiceoverEventName);
 
-	if (IQuestGiverInterface* GiverIF = Cast<IQuestGiverInterface>(DialogActor))
-	{
-		if (IQuestBearerInterface* BearerIF = Cast<IQuestBearerInterface>(GetOwningPlayer()))
-		{
-			if (Topic.QuestRelation.QuestID != 0)
-			{
-				for (const auto& StepData : Topic.QuestRelation.Steps)
-				{
-					if (BearerIF->CanValidate(Topic.QuestRelation.QuestID, StepData))
-						BearerIF->TryProgressQuest(Topic.QuestRelation.QuestID, DialogActor.Get());
-				}
-			}
-		}
-	}
 
 	RefreshDialogOptions_Implementation();
 }

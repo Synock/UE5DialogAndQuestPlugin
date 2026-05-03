@@ -71,15 +71,9 @@
  *
  * Step advancement (bAdvanceStep) uses the dialog NPC as the quest validator — the NPC's
  * QuestGiverComponent must have the relevant step registered via AddValidatableSteps().
- * This is the modern equivalent of the legacy QuestRelation field.
  *
  * The PlayerController must implement IDialogConsequenceInterface to handle these.
  *
- * ## Legacy Quest Relation
- *
- * FDialogTopicStruct::QuestRelation (FQuestValidatableSteps) is the old system where
- * clicking a topic directly tries to progress a quest via the QuestGiver validation flow.
- * New content should use the Consequence system instead.
  */
 
 ///@brief This represents a condition for a dialog to appear.
@@ -114,9 +108,18 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Relation")
 	float MinimumRelation = 0.375f;
 
-	/// Items the player must carry for this topic to appear. Empty = no item requirement.
+	/// Items the player must carry (inventory or bank) for this topic to appear. Empty = no item requirement.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Inventory")
 	TArray<int32> RequiredItems;
+
+	/**
+	 * Items the player must NOT possess (neither inventory nor bank) for this topic to appear.
+	 * Use to show a recovery topic only when the player has lost a quest-critical item.
+	 * The check is the inverse of RequiredItems: topic hides if the player has ANY of these items.
+	 * Empty = no absent-item condition.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Inventory")
+	TArray<int32> AbsentItems;
 
 	/// Skill check tag — game implements evaluation via IDialogSkillCheckInterface.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Skill")
@@ -157,7 +160,6 @@ struct FDialogConsequence : public FTableRowBase
 	/// When true (and QuestID != 0), progresses the quest to its next step using the
 	/// dialog NPC as the validator. The NPC's QuestGiverComponent must have the target
 	/// step registered via AddValidatableSteps().
-	/// This is the consequence-system equivalent of the legacy QuestRelation field.
 	/// Set NewQuestState = Unknown to advance the step without touching the quest state.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Quest")
 	bool bAdvanceStep = false;
@@ -174,9 +176,19 @@ struct FDialogConsequence : public FTableRowBase
 	/// Returns the effective mention-quest ID.
 	int64 GetMentionQuestID() const { return MentionQuest ? MentionQuest->QuestID : 0; }
 
+	/**
+	 * Item IDs given directly to the player when this topic is clicked.
+	 * Processed by AMainPlayerController::Server_HandleDialogConsequence_Implementation via
+	 * PlayerTryAutoLootFunction — items go to inventory (equip slot or bag slot as available).
+	 * Use for NPC item recovery topics (re-granting a lost quest item).
+	 * Empty = no items granted.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Inventory")
+	TArray<int32> ItemsToGrant;
+
 	bool HasConsequence() const
 	{
-		return GetQuestID() != 0 || FactionDelta != 0.f || GetMentionQuestID() != 0;
+		return GetQuestID() != 0 || FactionDelta != 0.f || GetMentionQuestID() != 0 || !ItemsToGrant.IsEmpty();
 	}
 };
 
@@ -204,9 +216,6 @@ struct FDialogTopicStruct : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog")
 	FText TopicText;
 
-	/// Legacy quest relation — kept for backward compatibility with existing DataTables.
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog|Quest")
-	FQuestValidatableSteps QuestRelation;
 
 	/// New consequence system — triggered when this topic is clicked.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog|Consequence")

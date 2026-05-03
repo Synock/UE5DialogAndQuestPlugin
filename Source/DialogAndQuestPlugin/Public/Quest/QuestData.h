@@ -213,6 +213,24 @@ struct FQuestMetaData : public FTableRowBase
 	/// Conditions that can botch (fail) this quest irrecoverably.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch")
 	TArray<FQuestBotchCondition> BotchConditions;
+
+	/**
+	 * Item IDs that must stay in the player's possession (inventory or bank) while this
+	 * quest is active. If ANY of these items is dropped, sold, or destroyed,
+	 * ANeverQuestGameMode::HandleQuestBotchOnItemLoss() calls BotchQuest() immediately.
+	 * Leave empty if the quest has no item-loss botch condition.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch")
+	TArray<int32> BotchItemIDs;
+
+	/**
+	 * Journal text shown when the quest is botched via BotchItemIDs item loss.
+	 * Ignored when BotchItemIDs is empty.
+	 * Example: "You lost the crate of defective arrows. Guard Weleth will have to find another courier."
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch",
+		meta = (EditCondition = "BotchItemIDs.Num() > 0"))
+	FText ItemLossBotchDescription;
 };
 
 ///@brief This is a list of objectives that can be validated by a quest giver

@@ -29,9 +29,12 @@ public:
 	virtual float EvaluateSkillCheck(const FGameplayTag& SkillTag, const AActor* CheckingActor) const = 0;
 
 	/// Check if the given actor possesses all the required items.
-	/// @param RequiredItems Array of item IDs that must be in the actor's inventory.
+	/// Implementations should check ALL persistent storage locations (active inventory bags
+	/// AND bank) so that AbsentItems conditions and RequiredItems conditions behave
+	/// consistently regardless of where the player has stashed the item.
+	/// @param RequiredItems Array of item IDs that must be found in inventory or bank.
 	/// @param CheckingActor The actor being checked.
-	/// @return True if all required items are present.
+	/// @return True if every item in RequiredItems is present in inventory or bank.
 	virtual bool HasRequiredItems(const TArray<int32>& RequiredItems, const AActor* CheckingActor) const
 	{
 		return RequiredItems.IsEmpty(); // Default: no items required = pass
