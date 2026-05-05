@@ -86,13 +86,51 @@ void UQuestJournalDetailsWidget::DisplayQuestData(int64 QuestID)
 				StepListView->AddItem(Entry);
 			}
 
-			// Current step — only for non-terminal states
+			// Current step — only for non-terminal states.
+			// Branch dispatch nodes are routing-only stubs: they carry no author-set
+			// title/description and should not appear as a list entry (doing so produces
+			// an uninitialised "lorem ipsum" row that confuses the player).  Instead,
+			// show the branch alternatives directly, separated by OR dividers between —
+			// not before — each entry so the first alternative has no leading divider.
 			if (!Quest->IsTerminal() && Quest->CurrentStep.QuestID != 0)
 			{
-				UQuestEntryData* Entry = NewObject<UQuestEntryData>(this);
-				Entry->Data   = Quest->CurrentStep;
-				Entry->Parent = ParentJournal;
-				StepListView->AddItem(Entry);
+			// Branch and Parallel dispatch nodes are routing stubs with no authored
+			// title/description — skip them as direct entries and show alternatives instead.
+			const bool bIsBranchDispatch =
+				(Quest->CurrentStep.StepType == EQuestStepType::Branch ||
+				 Quest->CurrentStep.StepType == EQuestStepType::Parallel);
+
+				if (!bIsBranchDispatch)
+				{
+					UQuestEntryData* Entry = NewObject<UQuestEntryData>(this);
+					Entry->Data   = Quest->CurrentStep;
+					Entry->Parent = ParentJournal;
+					StepListView->AddItem(Entry);
+				}
+
+				// BranchAlternatives is populated server-side when CurrentStep.StepType ==
+				// Branch and is replicated via FQuestProgressData, giving the client journal
+				// all available paths without querying the server-side quest registry.
+				// bIsBranchSeparator lets the Blueprint step widget render a divider row.
+				// The separator is inserted BETWEEN alternatives (not before the first) so
+				// the list starts cleanly with the first path description.
+				bool bFirstAlt = true;
+				for (const FQuestProgressStep& Alt : Quest->BranchAlternatives)
+				{
+					if (!bFirstAlt)
+					{
+						UQuestEntryData* Sep = NewObject<UQuestEntryData>(this);
+						Sep->bIsBranchSeparator = true;
+						Sep->Parent = ParentJournal;
+						StepListView->AddItem(Sep);
+					}
+					bFirstAlt = false;
+
+					UQuestEntryData* AltEntry = NewObject<UQuestEntryData>(this);
+					AltEntry->Data   = Alt;
+					AltEntry->Parent = ParentJournal;
+					StepListView->AddItem(AltEntry);
+				}
 			}
 		}
 	}

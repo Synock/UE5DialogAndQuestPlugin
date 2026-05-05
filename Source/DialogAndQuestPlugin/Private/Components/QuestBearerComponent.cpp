@@ -1,6 +1,7 @@
 #include "Components/QuestBearerComponent.h"
 
 #include "GameFramework/GameModeBase.h"
+#include "Components/QuestMainComponent.h"
 #include "Interfaces/DialogGameModeInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
 #include "Interfaces/QuestGiverInterface.h"
@@ -115,6 +116,15 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 	if (QData.IsTerminal())
 		return;
 
+	// Warn when we receive a sentinel as the next step but the current step is not the
+	// FinishingStep. This indicates malformed quest data (no FinishingStep marker set).
+	if (UQuestMainComponent::IsStepSentinel(NextQuestStep) && !QData.CurrentStep.FinishingStep)
+	{
+		UDialogAndQuestPluginHelper::Warning(FString::Printf(
+			TEXT("ProgressQuest: QID=%lld reached end of step chain at SubID=%d without a FinishingStep — quest will complete incorrectly; fix the quest asset"),
+			QuestMeta.QuestID, QData.CurrentStep.QuestSubID));
+	}
+
 	// For non-repeatable quests: only progress if we're not already past this step.
 	// For repeatable quests: always allow re-progression on the same step.
 	// Log before the gate so we always know whether it passed.
@@ -135,16 +145,31 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 		QData.PreviousStep.Add(QData.CurrentStep);
 		QData.ProgressID = NextQuestStep.QuestSubID;
 
-		FQuestProgressStep NewStepProgress;
+		// Use the copy constructor so ALL FQuestStep fields (including StepType and
+		// NextStepIDs) are preserved in the replicated FQuestProgressStep.  The
+		// field-by-field approach previously used left StepType as Linear and
+		// NextStepIDs empty, preventing the journal from detecting Branch steps.
+		FQuestProgressStep NewStepProgress(NextQuestStep);
 		NewStepProgress.Completed = false;
-		NewStepProgress.StepDescription = NextQuestStep.StepDescription;
-		NewStepProgress.StepTitle = NextQuestStep.StepTitle;
-		NewStepProgress.QuestID = NextQuestStep.QuestID;
-		NewStepProgress.QuestSubID = NextQuestStep.QuestSubID;
-		NewStepProgress.RewardClass = NextQuestStep.RewardClass;
-		NewStepProgress.NecessaryItems = NextQuestStep.NecessaryItems;
-		NewStepProgress.NecessaryCoins = NextQuestStep.NecessaryCoins;
-		NewStepProgress.ItemTurnInDialog = NextQuestStep.ItemTurnInDialog;
+
+		// Build BranchAlternatives so the journal can render "OR" blocks when the player
+		// faces a branching or parallel choice.  Cleared for non-dispatch steps.
+		QData.BranchAlternatives.Empty();
+		if (NewStepProgress.StepType == EQuestStepType::Branch ||
+			NewStepProgress.StepType == EQuestStepType::Parallel)
+		{
+			for (const int32 BranchID : NewStepProgress.NextStepIDs)
+			{
+				for (const FQuestStep& BranchStep : QuestMeta.Steps)
+				{
+					if (BranchStep.QuestSubID == BranchID)
+					{
+						QData.BranchAlternatives.Add(FQuestProgressStep(BranchStep));
+						break;
+					}
+				}
+			}
+		}
 
 		// Completion is driven by the step the player JUST COMPLETED, now archived as
 		// PreviousStep.Last(), NOT by the destination step (NextQuestStep).
@@ -231,13 +256,32 @@ bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID
 	if (!IsAtStep(QuestID, StepID))
 		return false;
 
-	const auto& CurrentStep = GetKnownQuest(QuestID).CurrentStep;
+	const FQuestProgressData& QuestData = GetKnownQuest(QuestID);
 
-	const bool IsExpectingSomething = !CurrentStep.NecessaryItems.IsEmpty() || CurrentStep.NecessaryCoins != 0.f;
+	// When the player is sitting at a Branch or Parallel dispatch node, IsAtStep() also
+	// returns true for destination step IDs.  In that case CurrentStep is the dispatch
+	// node itself (no NecessaryItems), so look up the matching BranchAlternatives entry
+	// to find the correct NecessaryItems / NecessaryCoins for this destination path.
+	const FQuestProgressStep* StepToValidate = &QuestData.CurrentStep;
+	if ((QuestData.CurrentStep.StepType == EQuestStepType::Branch ||
+		 QuestData.CurrentStep.StepType == EQuestStepType::Parallel) &&
+		QuestData.CurrentStep.QuestSubID != StepID)
+	{
+		for (const FQuestProgressStep& Alt : QuestData.BranchAlternatives)
+		{
+			if (Alt.QuestSubID == StepID)
+			{
+				StepToValidate = &Alt;
+				break;
+			}
+		}
+	}
+
+	const bool IsExpectingSomething = !StepToValidate->NecessaryItems.IsEmpty() || StepToValidate->NecessaryCoins != 0.f;
 	if (!IsExpectingSomething)
 		return false;
 
-	TArray<int32> NecessaryItems = CurrentStep.NecessaryItems;
+	TArray<int32> NecessaryItems = StepToValidate->NecessaryItems;
 	if (!NecessaryItems.IsEmpty())
 	{
 		for (const auto& ItemID : InputItems)
@@ -251,7 +295,7 @@ bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID
 	}
 
 	const bool GivenItemIsOK = NecessaryItems.IsEmpty();
-	float NecessaryCoins = CurrentStep.NecessaryCoins - InputCoins;
+	float NecessaryCoins = StepToValidate->NecessaryCoins - InputCoins;
 	const bool GivenCashIsOk = NecessaryCoins <= 0.f;
 
 	return GivenItemIsOK && GivenCashIsOk;
@@ -272,6 +316,11 @@ bool UQuestBearerComponent::Server_TryProgressQuest_Validate(int64 QuestID, AAct
 		return false;
 
 	if (QuestID <= 0)
+		return false;
+
+	// Reject progression attempts on Mentioned-state quests — they require a formal
+	// AuthorityAddQuest (accept) before any step can be validated.
+	if (IsQuestKnown(QuestID) && GetQuestState(QuestID) == EQuestState::Mentioned)
 		return false;
 
 	return true;
@@ -376,7 +425,21 @@ bool UQuestBearerComponent::IsAtStep(int64 QuestID, int32 StepID) const
 	if (!IsQuestKnown(QuestID))
 		return false;
 
-	return GetKnownQuest(QuestID).ProgressID == StepID;
+	const FQuestProgressData& Quest = GetKnownQuest(QuestID);
+
+	// Exact match: player is at this step.
+	if (Quest.ProgressID == StepID)
+		return true;
+
+	// Multi-path aware: when the player is sitting at a Branch or Parallel dispatch node,
+	// any of its destination step IDs are considered "reachable" for the purpose of
+	// item-turn-in checks in HandlePlayerGive.  This allows each branch NPC to match its
+	// own destination independently without the player being physically advanced first.
+	if (Quest.CurrentStep.StepType == EQuestStepType::Branch ||
+		Quest.CurrentStep.StepType == EQuestStepType::Parallel)
+		return Quest.CurrentStep.NextStepIDs.Contains(StepID);
+
+	return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -534,21 +597,70 @@ void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID,
 	}
 
 	AuthorityAddQuest(QuestID);
-	if (KnownQuestDataLUT.Contains(QuestID))
+	if (!KnownQuestDataLUT.Contains(QuestID))
+		return;
+
+	// Replay steps silently by walking the actual quest step graph rather than using a naive
+	// counter loop.  A counter loop (old implementation) assumed QuestSubID values were
+	// sequential 0-based integers, which is only true for auto-sequenced quests and breaks
+	// completely for any quest with sparse or non-zero step IDs.
+	//
+	// Algorithm: starting from the initial state after AddQuest (ProgressID == 0,
+	// CurrentStep == Steps[0]), follow FindNextStep on CurrentStep.QuestSubID each iteration
+	// until ProgressID matches the persisted StepID (the s field from the backend).
+	//
+	// StepID == 0  →  player just accepted, no progressions needed (ProgressID already 0).
+	// StepID  > 0  →  walk forward until ProgressID reaches StepID.
+	if (StepID != 0)
 	{
-		// Replay steps silently — suppress QuestUpdateDispatcher to avoid triggering
-		// N save calls on login (one per step per quest).
-		for (int32 CurrentStepID = 0; CurrentStepID < StepID; ++CurrentStepID)
+		// Safety cap: can't visit more unique steps than the quest defines.
+		const int32 SafetyLimit = Meta.Steps.Num();
+		int32 StepCount = 0;
+
+		while (StepCount < SafetyLimit)
 		{
-			ProgressQuest(Meta, MQC->FindNextStep(Meta, CurrentStepID), /*SkipReward=*/true, /*bSilent=*/true);
+			// Re-fetch after each ProgressQuest call since it may rebuild the LUT.
+			const FQuestProgressData& Current = KnownQuestData[KnownQuestDataLUT[QuestID]];
+
+			if (Current.ProgressID == StepID)
+				break; // reached the target step
+
+			if (Current.IsTerminal())
+				break; // quest completed during replay (FinishingStep archived)
+
+			// Navigate using CurrentStep.QuestSubID, not ProgressID.
+			// After AddQuest, ProgressID==0 but CurrentStep.QuestSubID==Steps[0].QuestSubID,
+			// so using CurrentStep ensures the graph walk starts correctly even for non-zero step IDs.
+			const FQuestStep& NextStep = MQC->FindNextStep(Meta, Current.CurrentStep.QuestSubID);
+			if (UQuestMainComponent::IsStepSentinel(NextStep))
+			{
+				UDialogAndQuestPluginHelper::Warning(FString::Printf(
+					TEXT("AuthoritySetupQuestData: QID=%lld — reached end of step chain before StepID=%d (only advanced to ProgressID=%d). Quest asset may be missing steps."),
+					QuestID, StepID, Current.ProgressID));
+				break;
+			}
+
+			ProgressQuest(Meta, NextStep, /*SkipReward=*/true, /*bSilent=*/true);
+			++StepCount;
 		}
 
-		// Apply the requested initial state
-		if (InitialState != EQuestState::Accepted)
+		// Log if we couldn't reach the target step — indicates a save/definition mismatch.
+		const int32 FinalProgressID = KnownQuestData[KnownQuestDataLUT[QuestID]].ProgressID;
+		if (FinalProgressID != StepID && !KnownQuestData[KnownQuestDataLUT[QuestID]].IsTerminal())
 		{
-			FQuestProgressData& QData = KnownQuestData[KnownQuestDataLUT[QuestID]];
-			QData.State = InitialState;
+			UDialogAndQuestPluginHelper::Warning(FString::Printf(
+				TEXT("AuthoritySetupQuestData: QID=%lld — could not reach StepID=%d; ended at ProgressID=%d after %d iterations"),
+				QuestID, StepID, FinalProgressID, StepCount));
 		}
+	}
+
+	// Apply the requested initial state (Achieved, Completed, Botched, etc.)
+	if (InitialState != EQuestState::Accepted)
+	{
+		FQuestProgressData& QData = KnownQuestData[KnownQuestDataLUT[QuestID]];
+		QData.State = InitialState;
+		// Propagate the corrected state to the owning client.
+		OnRep_KnownQuest();
 	}
 }
 

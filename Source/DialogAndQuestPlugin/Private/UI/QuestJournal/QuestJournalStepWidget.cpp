@@ -9,6 +9,17 @@ void UQuestJournalStepWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 	if (!Data)
 		return;
 
+	// Branch-separator rows carry no step data — let the Blueprint handle the visual.
+	// bIsBranchSeparator is exposed BlueprintReadWrite so the BP widget can switch its
+	// visual state (e.g. show a centered "— OR —" label, hide normal title/desc fields).
+	if (Data->bIsBranchSeparator)
+	{
+		LocalData     = FQuestProgressStep{};
+		ParentJournal = Data->Parent;
+		OnStepRefreshed(LocalData);
+		return;
+	}
+
 	LocalData     = Data->Data;
 	ParentJournal = Data->Parent;
 

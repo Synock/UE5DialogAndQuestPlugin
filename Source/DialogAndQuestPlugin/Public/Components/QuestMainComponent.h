@@ -6,6 +6,7 @@
 #include "QuestMainComponent.generated.h"
 
 class UQuestAsset;
+class IQuestGiverInterface;
 
 
 ///@brief
@@ -36,7 +37,13 @@ protected:
 	uint32 FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep);
 public:
 
-	const FQuestStep& FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep);
+	/// Returns the step to advance to after CurrentStep.
+	/// When CurrentStep is a Branch and Validator is provided, picks the branch whose ID the
+	/// validator's QuestGiverComponent has registered, enabling NPC-specific path selection.
+	/// Without a Validator (or when no registered branch matches), falls back to NextStepIDs[0].
+	/// Returns GQuestStepSentinel (QuestID==0, QuestSubID==0) when there is no next step.
+	const FQuestStep& FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep,
+	                               const IQuestGiverInterface* Validator = nullptr);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void AddQuest(const FQuestMetaData& QuestData);
@@ -60,4 +67,11 @@ public:
 	/// Used for startup log messages; also useful for editor debugging.
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	int32 GetRegisteredQuestCount() const { return QuestList.Num(); }
+
+	/// Returns true if Step is the "no successor" sentinel returned by FindNextStep()
+	/// when a step has no further steps in the quest chain.
+	/// A sentinel step has QuestID == 0 and QuestSubID == 0 (default-constructed FQuestStep).
+	/// Never pass a sentinel to ProgressQuest().
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Quest")
+	static bool IsStepSentinel(const FQuestStep& Step) { return Step.QuestID == 0 && Step.QuestSubID == 0; }
 };

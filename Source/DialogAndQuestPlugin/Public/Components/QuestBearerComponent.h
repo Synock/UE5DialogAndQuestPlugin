@@ -161,4 +161,18 @@ public:
 	bool CanValidateStepWithItems(int64 QuestID, int32 StepID, const TArray<int32>& InputItems, float InputCoins,
 		TArray<int32>& OutputItems, float& OutputCoins);
 
+#if WITH_AUTOMATION_TESTS
+	/**
+	 * Test-only: directly inject a pre-built FQuestProgressData entry into KnownQuestData
+	 * and rebuild the LUT.  Bypasses the ROLE_Authority gate so unit tests running outside
+	 * a full game world can populate quest state without a server.
+	 * NOT compiled into shipping or development builds.
+	 */
+	void Test_InjectQuestData(FQuestProgressData Data)
+	{
+		KnownQuestData.Add(MoveTemp(Data));
+		RebuildQuestLUT();
+	}
+#endif
+
 };

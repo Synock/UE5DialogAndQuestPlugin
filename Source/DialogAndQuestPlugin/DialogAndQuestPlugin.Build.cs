@@ -42,7 +42,12 @@ public class DialogAndQuestPlugin : ModuleRules
 				// ... add private dependencies that you statically link with here ...
 			}
 			);
-		
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("DataValidation");
+		}
+
 		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]

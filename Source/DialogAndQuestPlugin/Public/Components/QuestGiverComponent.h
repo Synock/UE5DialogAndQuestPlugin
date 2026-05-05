@@ -27,7 +27,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddValidatableSteps(int64 QuestID, TArray<int32> Steps);
 
-	bool CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep);
+	bool CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep) const;
 
 	const TMap<int64, FQuestValidatableSteps>& GetValidatableQuestSteps() const {return ValidatableSteps;}
 };

@@ -82,8 +82,10 @@ void UDialogComponent::AddTopicsFromAsset(UDialogAsset* Asset, TSet<UDialogAsset
 	if (Visited.Contains(Asset))
 	{
 		UE_LOG(LogTemp, Warning,
-			TEXT("UDialogComponent::AddTopicsFromAsset — circular SharedTopicAssets reference detected on '%s'. Skipping."),
-			*Asset->AssetName);
+			TEXT("UDialogComponent::AddTopicsFromAsset — circular SharedTopicAssets reference detected. "
+			     "AssetName='%s'  Path='%s'. "
+			     "Open this asset in the Editor and remove the self/circular entry from SharedTopicAssets."),
+			*Asset->AssetName, *Asset->GetPathName());
 		return;
 	}
 	Visited.Add(Asset);

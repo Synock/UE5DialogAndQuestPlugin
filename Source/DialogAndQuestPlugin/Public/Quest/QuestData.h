@@ -143,6 +143,16 @@ struct FQuestStep : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements")
 	float NecessaryCoins = 0.f;
 
+	/**
+	 * Optional validator class filter for item turn-in steps.
+	 * When set, only an NPC whose class IsChildOf this class will register this step during InitQuest().
+	 * Leave empty to allow any NPC that lists this quest in HandledQuests (default, backward-compatible).
+	 * Must implement IQuestGiverInterface.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements",
+		meta = (MustImplement = "/Script/DialogAndQuestPlugin.QuestGiverInterface"))
+	TSubclassOf<UObject> ValidatorClass;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	FText ItemTurnInDialog;
 
@@ -253,7 +263,7 @@ struct FQuestProgressStep : public FQuestStep
 	GENERATED_BODY()
 	FQuestProgressStep() = default;
 
-	explicit FQuestProgressStep(const FQuestStep& Step);
+	explicit DIALOGANDQUESTPLUGIN_API FQuestProgressStep(const FQuestStep& Step);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool Completed = false;
@@ -294,6 +304,15 @@ struct FQuestProgressData
 	/// Full quest description shown once the quest is accepted (mirrors FQuestMetaData::QuestDescription).
 	UPROPERTY(BlueprintReadOnly)
 	FText QuestDescription;
+
+	/**
+	 * Populated when CurrentStep.StepType == Branch.
+	 * Contains one FQuestProgressStep per NextStepIDs destination so the journal can display
+	 * all available paths separated by "OR" blocks without querying the server-side quest
+	 * registry from the client. Cleared automatically when the step is no longer a Branch.
+	 */
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FQuestProgressStep> BranchAlternatives;
 
 	/// True if the quest is in a terminal state (Completed or Botched).
 	bool IsTerminal() const { return State == EQuestState::Completed || State == EQuestState::Botched; }
@@ -353,4 +372,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	UQuestJournalWindow* Parent = nullptr;
+
+	/**
+	 * When true this entry is a visual "— OR —" separator between branch alternatives.
+	 * Data is empty; the step widget Blueprint should detect this flag and render a divider
+	 * row instead of normal title/description fields.
+	 */
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsBranchSeparator = false;
 };

@@ -4,7 +4,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "DialogAndQuestPluginHelper.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogDialogAndQuest, Log, All);
+DIALOGANDQUESTPLUGIN_API DECLARE_LOG_CATEGORY_EXTERN(LogDialogAndQuest, Log, All);
 
 UCLASS()
 class DIALOGANDQUESTPLUGIN_API UDialogAndQuestPluginHelper : public UBlueprintFunctionLibrary

@@ -66,5 +66,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Dialog|Editor")
 	FString EditorNotes;
 #endif
+
+#if WITH_EDITOR
+	/**
+	 * Validates that SharedTopicAssets contains no cycles.
+	 * Called automatically by the Editor when this asset is saved.
+	 */
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+
+private:
+	/** Recursive DFS helper for IsDataValid cycle detection. */
+	bool HasSharedAssetCycle(const UDialogAsset* Node, TSet<const UDialogAsset*>& Visited, TSet<const UDialogAsset*>& Stack) const;
+#endif
 };
 

@@ -29,7 +29,7 @@ void UQuestGiverComponent::AddValidatableSteps(int64 QuestID, TArray<int32> Step
 
 //----------------------------------------------------------------------------------------------------------------------
 
-bool UQuestGiverComponent::CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep)
+bool UQuestGiverComponent::CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep) const
 {
 	if (const ENetRole LocalRole = GetOwnerRole(); LocalRole != ROLE_Authority)
 		return false;

@@ -23,5 +23,5 @@ class DIALOGANDQUESTPLUGIN_API IQuestGiverInterface
 public:
 	virtual UQuestGiverComponent* GetQuestGiverComponent() const = 0;
 
-	bool CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep);
+	bool CanValidateQuestStep(int64 QuestID, int32 CurrentQuestStep) const;
 };
