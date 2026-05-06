@@ -68,12 +68,13 @@ enum struct EQuestStepConditionType: uint8
 	GreaterEqual
 };
 
-///@brief Quest state machine following a Mentioned→Accepted→Achieved→Completed flow with a Botched dead-end.
+///@brief Quest state machine following a Mentioned→Briefed→Accepted→Achieved→Completed flow with a Botched dead-end.
 UENUM(BlueprintType)
 enum class EQuestState : uint8
 {
 	Unknown    UMETA(DisplayName = "Unknown"),
 	Mentioned  UMETA(DisplayName = "Mentioned"),
+	Briefed    UMETA(DisplayName = "Briefed"),   ///< Player spoke to quest giver, heard pitch — not yet committed. ProgressID = -1.
 	Accepted   UMETA(DisplayName = "Accepted"),
 	Achieved   UMETA(DisplayName = "Achieved"),
 	Completed  UMETA(DisplayName = "Completed"),
@@ -353,10 +354,11 @@ inline EQuestJournalCategory GetQuestJournalCategory(EQuestState State)
 {
 	switch (State)
 	{
-	case EQuestState::Mentioned:  return EQuestJournalCategory::Rumored;
+	case EQuestState::Mentioned:
+	case EQuestState::Briefed:   return EQuestJournalCategory::Rumored;
 	case EQuestState::Completed:
-	case EQuestState::Botched:    return EQuestJournalCategory::Finished;
-	default:                      return EQuestJournalCategory::Active;
+	case EQuestState::Botched:   return EQuestJournalCategory::Finished;
+	default:                     return EQuestJournalCategory::Active;
 	}
 }
 

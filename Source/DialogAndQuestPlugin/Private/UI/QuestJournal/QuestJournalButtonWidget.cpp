@@ -34,5 +34,10 @@ void UQuestJournalButtonWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 	if (QuestTitleText)
 		QuestTitleText->SetText(LocalData.QuestTitle);
 
+	// Let Blueprint apply any general state-driven styling first.
 	OnButtonRefreshed(LocalData);
+
+	// C++ enforces dark red for Botched — overrides any Blueprint color for this state.
+	if (QuestTitleText && LocalData.State == EQuestState::Botched)
+		QuestTitleText->SetColorAndOpacity(FLinearColor(0.55f, 0.0f, 0.0f, 1.0f));
 }

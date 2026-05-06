@@ -228,10 +228,11 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 		FQuestProgressData& Existing = KnownQuestData[KnownQuestDataLUT[QuestMeta.QuestID]];
 
 		// Transition to Accepted when:
-		//   - Quest was only Mentioned (formal accept)
+		//   - Quest was only Mentioned or Briefed (formal accept)
 		//   - Quest is Completed and marked Repeatable (repeat cycle reset)
-		const bool bShouldReset = Existing.State == EQuestState::Mentioned ||
-			(Existing.Repeatable && Existing.State == EQuestState::Completed);
+		const bool bShouldReset = Existing.State == EQuestState::Mentioned  ||
+		                          Existing.State == EQuestState::Briefed     ||
+		                          (Existing.Repeatable && Existing.State == EQuestState::Completed);
 
 		if (bShouldReset)
 		{
@@ -318,10 +319,14 @@ bool UQuestBearerComponent::Server_TryProgressQuest_Validate(int64 QuestID, AAct
 	if (QuestID <= 0)
 		return false;
 
-	// Reject progression attempts on Mentioned-state quests — they require a formal
+	// Reject progression attempts on Mentioned/Briefed-state quests — they require a formal
 	// AuthorityAddQuest (accept) before any step can be validated.
-	if (IsQuestKnown(QuestID) && GetQuestState(QuestID) == EQuestState::Mentioned)
-		return false;
+	if (IsQuestKnown(QuestID))
+	{
+		const EQuestState S = GetQuestState(QuestID);
+		if (S == EQuestState::Mentioned || S == EQuestState::Briefed)
+			return false;
+	}
 
 	return true;
 }
@@ -375,7 +380,11 @@ bool UQuestBearerComponent::CanDisplay(int64 QuestID, int32 StepID, EQuestStepCo
 bool UQuestBearerComponent::CanValidate(int64 QuestID, int32 StepID) const
 {
 	if (StepID == 0)
-		return !IsQuestKnown(QuestID) || GetKnownQuest(QuestID).State == EQuestState::Mentioned;
+	{
+		if (!IsQuestKnown(QuestID)) return true;
+		const EQuestState S = GetKnownQuest(QuestID).State;
+		return S == EQuestState::Mentioned || S == EQuestState::Briefed;
+	}
 
 	if (!IsQuestKnown(QuestID))
 		return false;
@@ -474,6 +483,50 @@ void UQuestBearerComponent::MentionQuest(int64 QuestID)
 
 	RebuildQuestLUT();
 	QuestUpdateDispatcher.Broadcast(QuestID, -1, EQuestState::Mentioned);
+	OnRep_KnownQuest();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::BriefQuest(int64 QuestID)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+		return;
+
+	if (KnownQuestDataLUT.Contains(QuestID))
+	{
+		// Only upgrade Mentioned → Briefed; no-op for Briefed or any state beyond.
+		FQuestProgressData& QData = KnownQuestData[KnownQuestDataLUT[QuestID]];
+		if (QData.State != EQuestState::Mentioned)
+			return;
+
+		QData.State = EQuestState::Briefed;
+		QuestUpdateDispatcher.Broadcast(QuestID, -1, EQuestState::Briefed);
+		OnRep_KnownQuest();
+		return;
+	}
+
+	// Unknown → Briefed (player spoke to giver without a prior rumor).
+	IDialogGameModeInterface* GM = Cast<IDialogGameModeInterface>(GetWorld()->GetAuthGameMode());
+	if (!GM || !GM->GetMainQuestComponent())
+		return;
+
+	const FQuestMetaData& QuestData = GM->GetMainQuestComponent()->GetQuestData(QuestID);
+	if (QuestData.QuestID == 0)
+		return;
+
+	FQuestProgressData NewQuestData;
+	NewQuestData.QuestID              = QuestData.QuestID;
+	NewQuestData.QuestTitle           = QuestData.QuestTitle;
+	NewQuestData.QuestDescription     = QuestData.QuestDescription;
+	NewQuestData.MentionedDescription = QuestData.MentionedDescription;
+	NewQuestData.Repeatable           = QuestData.Repeatable;
+	NewQuestData.State                = EQuestState::Briefed;
+	NewQuestData.ProgressID           = -1;
+	KnownQuestData.Add(MoveTemp(NewQuestData));
+
+	RebuildQuestLUT();
+	QuestUpdateDispatcher.Broadcast(QuestID, -1, EQuestState::Briefed);
 	OnRep_KnownQuest();
 }
 
@@ -593,6 +646,13 @@ void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID,
 	if (InitialState == EQuestState::Mentioned)
 	{
 		MentionQuest(QuestID);
+		return;
+	}
+
+	// Handle Briefed state — create a briefed entry, don't set up steps
+	if (InitialState == EQuestState::Briefed)
+	{
+		BriefQuest(QuestID);
 		return;
 	}
 

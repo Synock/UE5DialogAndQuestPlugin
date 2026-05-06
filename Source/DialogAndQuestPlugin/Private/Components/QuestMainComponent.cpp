@@ -205,13 +205,15 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		if (CurrentQuestProgress.IsTerminal())
 			return false;
 
-		// Block progression attempts on Mentioned-state quests via a crafted RPC.
-		// Mentioned quests must go through AuthorityAddQuest (formal accept) first.
-		if (CurrentQuestProgress.State == EQuestState::Mentioned)
+		// Block progression attempts on Mentioned/Briefed-state quests via a crafted RPC.
+		// These quests must go through AuthorityAddQuest (formal accept) first.
+		if (CurrentQuestProgress.State == EQuestState::Mentioned ||
+		    CurrentQuestProgress.State == EQuestState::Briefed)
 		{
 			UDialogAndQuestPluginHelper::Warning(FString::Printf(
-				TEXT("TryProgressQuest: QID=%lld is in Mentioned state — formal accept required before progression"),
-				QuestID));
+				TEXT("TryProgressQuest: QID=%lld is in %s state — formal accept required before progression"),
+				QuestID,
+				CurrentQuestProgress.State == EQuestState::Briefed ? TEXT("Briefed") : TEXT("Mentioned")));
 			return false;
 		}
 

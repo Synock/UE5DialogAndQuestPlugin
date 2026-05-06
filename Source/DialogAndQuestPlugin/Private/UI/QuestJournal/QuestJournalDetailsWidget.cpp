@@ -26,11 +26,19 @@ void UQuestJournalDetailsWidget::InitDialog(UQuestJournalWindow* InputParentDial
 
 void UQuestJournalDetailsWidget::ClearDetails()
 {
+	static const FLinearColor DefaultColor = FLinearColor::White;
+
 	if (QuestTitleText)
+	{
 		QuestTitleText->SetText(FText::GetEmpty());
+		QuestTitleText->SetColorAndOpacity(DefaultColor);
+	}
 
 	if (QuestDescriptionText)
+	{
 		QuestDescriptionText->SetText(FText::GetEmpty());
+		QuestDescriptionText->SetColorAndOpacity(DefaultColor);
+	}
 
 	if (StepListView)
 		StepListView->ClearListItems();
@@ -55,16 +63,38 @@ void UQuestJournalDetailsWidget::DisplayQuestData(int64 QuestID)
 	}
 
 	// --- Title ---
+	const FLinearColor BotchedColor(0.55f, 0.0f, 0.0f, 1.0f);
+	const bool bBotched = (Quest->State == EQuestState::Botched);
+
 	if (QuestTitleText)
+	{
 		QuestTitleText->SetText(Quest->QuestTitle);
+		QuestTitleText->SetColorAndOpacity(bBotched ? BotchedColor : FLinearColor::White);
+	}
 
 	// --- Description (state-sensitive) ---
 	if (QuestDescriptionText)
 	{
-		const FText Description = (Quest->State == EQuestState::Mentioned)
-			? Quest->MentionedDescription
-			: Quest->QuestDescription;
+		FText Description;
+		if (Quest->State == EQuestState::Mentioned)
+		{
+			Description = Quest->MentionedDescription;
+		}
+		else if (Quest->State == EQuestState::Briefed)
+		{
+			// Show rumor text + full description — player spoke to giver but hasn't committed.
+			// Still displayed on the Rumored journal tab.
+			Description = Quest->MentionedDescription.IsEmpty()
+				? Quest->QuestDescription
+				: FText::Format(NSLOCTEXT("QuestJournal", "BriefedDescription", "{0}\n\n{1}"),
+				                Quest->MentionedDescription, Quest->QuestDescription);
+		}
+		else
+		{
+			Description = Quest->QuestDescription;
+		}
 		QuestDescriptionText->SetText(Description);
+		QuestDescriptionText->SetColorAndOpacity(bBotched ? BotchedColor : FLinearColor::White);
 	}
 
 	// --- Steps ---
@@ -72,7 +102,8 @@ void UQuestJournalDetailsWidget::DisplayQuestData(int64 QuestID)
 	{
 		StepListView->ClearListItems();
 
-		const bool bIsRumored = (Quest->State == EQuestState::Mentioned);
+		const bool bIsRumored = (Quest->State == EQuestState::Mentioned ||
+		                         Quest->State == EQuestState::Briefed);
 		StepListView->SetVisibility(bIsRumored ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 		if (!bIsRumored)

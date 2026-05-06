@@ -117,7 +117,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
 	void MentionQuest(int64 QuestID);
 
-	/// Accept a quest — transitions from Unknown/Mentioned to Accepted. Starts step tracking.
+	/// Brief a quest — transitions Unknown→Briefed or Mentioned→Briefed.
+	/// Player has spoken to the quest giver and heard the pitch but not yet committed.
+	/// No-ops if already Briefed or further along the state machine.
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Quest|State")
+	void BriefQuest(int64 QuestID);
+
+	/// Accept a quest — transitions from Unknown/Mentioned/Briefed to Accepted. Starts step tracking.
 	UFUNCTION(BlueprintCallable, Category = "Quest|State")
 	void AuthorityAddQuest(int64 QuestID);
 
