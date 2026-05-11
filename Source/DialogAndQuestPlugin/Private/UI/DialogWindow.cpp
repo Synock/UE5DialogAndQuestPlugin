@@ -110,7 +110,14 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 	if (bGoodGreeting)
 		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting().ToString());
 	else
-		TopicText->AddEmptyTopicData(DialogComponent->GetBadGreeting().ToString());
+	{
+		// Allow the NPC (or any IDialogInterface implementor) to supply a context-aware
+		// Falls back to the static BadGreeting in the DialogComponent when not overridden.
+		FText ChosenBadGreeting = DialogActorInterface
+			? DialogActorInterface->GetContextualBadGreeting(RelationValue, GetOwningPlayerPawn())
+			: DialogComponent->GetBadGreeting();
+		TopicText->AddEmptyTopicData(ChosenBadGreeting.ToString());
+	}
 
 	// Async greeting voiceover
 	const TSoftObjectPtr<USoundBase> GreetingVO = bGoodGreeting

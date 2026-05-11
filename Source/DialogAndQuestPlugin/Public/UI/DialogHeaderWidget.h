@@ -33,6 +33,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Text")
 	TObjectPtr<class UTextBlock> RelationStringText = nullptr;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Text")
+	TObjectPtr<class UProgressBar> RelationProgressBar = nullptr;
+
 	// --- Action buttons (optional; not all NPCs expose every service) ---
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Dialog|Buttons")

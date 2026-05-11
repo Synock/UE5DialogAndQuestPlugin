@@ -1,5 +1,6 @@
 
 #include "Interfaces/DialogInterface.h"
+#include "Components/DialogComponent.h"
 
 bool IDialogInterface::CanTrade() const
 {
@@ -30,3 +31,11 @@ float IDialogInterface::GetMaxInteractionDistance() const
 {
 	return 500.f;
 }
+
+FText IDialogInterface::GetContextualBadGreeting(float /*Relation*/, AActor* /*RequestingActor*/) const
+{
+	if (UDialogComponent* DC = GetDialogComponent())
+		return DC->GetBadGreeting();
+	return FText::GetEmpty();
+}
+
