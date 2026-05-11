@@ -3,6 +3,11 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Quest/QuestData.h"
+
+// UEdGraph is in Engine; forward-declare so WITH_EDITORONLY_DATA UPROPERTY compiles
+// without pulling in the full graph headers in runtime builds.
+class UEdGraph;
+
 #include "QuestAsset.generated.h"
 
 /**
@@ -81,6 +86,14 @@ public:
 	/// Editor notes — not included in cooked builds.
 	UPROPERTY(EditAnywhere, Category = "Quest|Editor")
 	FString EditorNotes;
+
+	/**
+	 * Serialised graph layout for the visual quest flow editor.
+	 * Populated and read by FQuestAssetEditor / UQuestGraph (DialogAndQuestPluginEditor).
+	 * Stripped at cook — UQuestAsset::Steps[] is the canonical runtime data.
+	 */
+	UPROPERTY()
+	UEdGraph* EditorGraph = nullptr;
 #endif
 };
 

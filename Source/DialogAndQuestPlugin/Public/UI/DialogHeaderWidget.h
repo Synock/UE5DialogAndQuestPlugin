@@ -77,6 +77,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
 	void ConfigureButtons(bool bCanTrade, bool bCanGive, bool bCanTrain, bool bCanBank, bool bCanRepair);
 
+	/**
+	 * Enables or disables the service buttons (Trade, Train, Bank, Repair).
+	 * Call with bEnabled=false when the player's relation is below the NPC's GreetingLimit
+	 * so buttons remain visible but are greyed-out and non-interactive.
+	 * Give is intentionally unaffected — players can always attempt to gift items.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Dialog|Buttons")
+	void SetServiceButtonsEnabled(bool bEnabled);
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")
 	UButton* GetTradeButton()  const { return TradeButton;  }
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog|Buttons")

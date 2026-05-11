@@ -137,9 +137,9 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 	{
 		QData.CurrentStep.Completed = true;
 
-		if (!SkipReward && QData.CurrentStep.RewardClass != nullptr)
+		if (!SkipReward && QData.CurrentStep.RewardAsset != nullptr)
 			if (IQuestBearerInterface* SelfBearerInterface = Cast<IQuestBearerInterface>(GetOwner()))
-				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardClass);
+				SelfBearerInterface->GrantReward(QData.CurrentStep.RewardAsset.Get());
 
 		// Archive the completed step (for both repeatable and non-repeatable)
 		QData.PreviousStep.Add(QData.CurrentStep);

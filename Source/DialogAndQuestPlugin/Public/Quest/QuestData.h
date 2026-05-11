@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Sound/SoundBase.h"
@@ -92,8 +93,8 @@ enum class EQuestStepType : uint8
 };
 
 ///@brief Concrete quest reward data. Subclass for game-specific rewards.
-UCLASS(MinimalAPI, BlueprintType, Blueprintable, EditInlineNew)
-class UQuestRewardData : public UObject
+UCLASS(MinimalAPI, BlueprintType, Blueprintable)
+class UQuestRewardData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 
@@ -135,8 +136,9 @@ struct FQuestStep : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
 	bool FinishingStep = false;
 
+	/** DataAsset supplying the reward granted when this step is completed. Null = no reward. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
-	TSubclassOf<UQuestRewardData> RewardClass;
+	TObjectPtr<UQuestRewardData> RewardAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements")
 	TArray<int32> NecessaryItems;

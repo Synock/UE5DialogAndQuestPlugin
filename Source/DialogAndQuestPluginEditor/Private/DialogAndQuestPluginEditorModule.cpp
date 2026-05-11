@@ -10,6 +10,10 @@
 #include "Dialog/DialogAsset.h"
 #include "DetailCustomization/QuestAssetDetailCustomization.h"
 #include "DetailCustomization/DialogAssetDetailCustomization.h"
+// Graph node classes must be linked so their UHT-generated code is registered
+#include "Graph/QuestGraph.h"
+#include "Graph/QuestGraphNode.h"
+#include "Graph/QuestGraphSchema.h"
 
 #define LOCTEXT_NAMESPACE "FDialogAndQuestPluginEditorModule"
 

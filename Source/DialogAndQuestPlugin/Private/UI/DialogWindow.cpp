@@ -94,6 +94,10 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 			DialogActorInterface->CanBank(),
 			DialogActorInterface->CanRepair()
 		);
+		// Disable service buttons when relation is below the NPC's greeting threshold.
+		// Buttons remain visible but greyed-out so the player can see what they're missing.
+		const bool bRelationOK = RelationValue >= DialogComponent->GetGreetingLimit();
+		Header->SetServiceButtonsEnabled(bRelationOK);
 		Header->SetRelationValue(RelationValue);
 		Header->SetRelationString(RelationString);
 		Header->SetDialogName(DialogActorInterface->GetCharacterNameForDialog().ToString());

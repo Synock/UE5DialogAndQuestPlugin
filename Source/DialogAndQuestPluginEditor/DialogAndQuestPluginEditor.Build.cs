@@ -29,6 +29,11 @@ public class DialogAndQuestPluginEditor : ModuleRules
 				"PropertyEditor",
 				"InputCore",
 				"GameplayTags",
+				// Graph editor
+				"GraphEditor",
+				"ToolMenus",
+				"EditorFramework",
+				"ApplicationCore",
 			}
 		);
 	}

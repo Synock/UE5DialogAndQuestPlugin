@@ -63,6 +63,21 @@ void UDialogHeaderWidget::ConfigureButtons(bool bCanTrade, bool bCanGive, bool b
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void UDialogHeaderWidget::SetServiceButtonsEnabled(bool bEnabled)
+{
+	auto SetEnabled = [bEnabled](UButton* Btn)
+	{
+		if (Btn) Btn->SetIsEnabled(bEnabled);
+	};
+	SetEnabled(TradeButton);
+	SetEnabled(TrainButton);
+	SetEnabled(BankButton);
+	SetEnabled(RepairButton);
+	// GiveButton intentionally excluded — players can always try to give items.
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UDialogHeaderWidget::OnTradeButtonClicked()  { IDialogWindowInterface::Execute_DisplayTradeWidget(ParentDialogObject.Get()); }
 void UDialogHeaderWidget::OnGiveButtonClicked()   { IDialogWindowInterface::Execute_DisplayGiveWidget(ParentDialogObject.Get()); }
 void UDialogHeaderWidget::OnTrainButtonClicked()  { IDialogWindowInterface::Execute_DisplayTrainDialogWidget(ParentDialogObject.Get()); }

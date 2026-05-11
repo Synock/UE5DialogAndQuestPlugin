@@ -45,7 +45,7 @@ void IQuestBearerInterface::AddQuest(const FQuestMetaData& QuestMeta)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void IQuestBearerInterface::GrantReward(TSubclassOf<UQuestRewardData> RewardData)
+void IQuestBearerInterface::GrantReward(UQuestRewardData* RewardData)
 {
 }
 

@@ -34,7 +34,7 @@ void UDialogComponent::OnRep_DialogData()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset)
+void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset, float FactionGreetingLimit)
 {
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
@@ -47,7 +47,13 @@ void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset)
 
 	GoodGreeting              = Asset->GoodGreeting;
 	BadGreeting               = Asset->BadGreeting;
-	GreetingLimit             = Asset->MinimumRelation;
+
+	// If the asset uses the sentinel (-1), fall back to the faction-wide default.
+	// Otherwise the asset's own value takes precedence (allows per-NPC overrides).
+	GreetingLimit = (Asset->MinimumRelation >= 0.f)
+		? Asset->MinimumRelation
+		: (FactionGreetingLimit >= 0.f ? FactionGreetingLimit : 0.375f);
+
 	GoodGreetingVoiceover     = Asset->GoodGreetingVoiceover;
 	BadGreetingVoiceover      = Asset->BadGreetingVoiceover;
 	GoodGreetingVoiceoverPath = GoodGreetingVoiceover.ToSoftObjectPath().ToString();

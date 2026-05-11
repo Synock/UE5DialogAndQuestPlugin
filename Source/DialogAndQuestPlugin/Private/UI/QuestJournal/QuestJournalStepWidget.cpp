@@ -10,15 +10,24 @@ void UQuestJournalStepWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		return;
 
 	// Branch-separator rows carry no step data — let the Blueprint handle the visual.
-	// bIsBranchSeparator is exposed BlueprintReadWrite so the BP widget can switch its
+	// bIsBranchSeparator is exposed BlueprintReadOnly so the BP widget can switch its
 	// visual state (e.g. show a centered "— OR —" label, hide normal title/desc fields).
 	if (Data->bIsBranchSeparator)
 	{
+		bIsBranchSeparator = true;
 		LocalData     = FQuestProgressStep{};
 		ParentJournal = Data->Parent;
+		// Explicitly clear any stale or designer-default (lorem ipsum) text so the
+		// Blueprint is free to show a pure divider row without interference.
+		if (StepTitleText)
+			StepTitleText->SetText(FText::GetEmpty());
+		if (StepDescriptionText)
+			StepDescriptionText->SetText(FText::GetEmpty());
 		OnStepRefreshed(LocalData);
 		return;
 	}
+
+	bIsBranchSeparator = false;
 
 	LocalData     = Data->Data;
 	ParentJournal = Data->Parent;

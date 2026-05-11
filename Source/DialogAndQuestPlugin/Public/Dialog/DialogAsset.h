@@ -29,7 +29,10 @@ public:
 	FText BadGreeting = FText::FromString("I don't wish to speak to your kind. Now get lost!");
 
 	/// Relation threshold for good/bad greeting.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Greeting", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	/// Set to -1 to inherit the faction's DefaultGreetingLimit from FFactionData
+	/// (passed in via UDialogComponent::InitDialogFromAsset).
+	/// Leave at 0.375 (default) to use the asset's own value regardless of faction.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Greeting", meta = (ClampMin = "-1.0", ClampMax = "1.0"))
 	float MinimumRelation = 0.375f;
 
 	/// Voiceover for the good greeting.

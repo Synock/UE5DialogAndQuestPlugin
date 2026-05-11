@@ -35,6 +35,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Journal")
 	TObjectPtr<class UQuestJournalWindow> ParentJournal = nullptr;
 
+	/**
+	 * True when this entry is a visual separator between branch alternatives ("— OR —").
+	 * Blueprint should check this flag to swap to a divider visual and hide normal
+	 * title/description fields.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Journal")
+	bool bIsBranchSeparator = false;
+
 	/** Called after C++ populates both text fields. Override in Blueprint for visual polish. */
 	UFUNCTION(BlueprintNativeEvent, Category = "Journal")
 	void OnStepRefreshed(const FQuestProgressStep& StepData);

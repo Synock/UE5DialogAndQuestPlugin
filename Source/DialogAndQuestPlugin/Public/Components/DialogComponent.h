@@ -107,9 +107,14 @@ public:
 	 * Primary init path for asset-based NPCs.
 	 * Reads greetings and topics directly from the asset (and any SharedTopicAssets),
 	 * with no dependency on UDialogMainComponent or GameMode registration.
+	 *
+	 * @param Asset              The dialog asset to load.
+	 * @param FactionGreetingLimit  Faction-wide default greeting limit [0,1].
+	 *        Used when Asset::MinimumRelation == -1 (sentinel = "use faction default").
+	 *        Pass a negative value to always use the asset's own MinimumRelation.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InitDialogFromAsset(UDialogAsset* Asset);
+	void InitDialogFromAsset(UDialogAsset* Asset, float FactionGreetingLimit = -1.f);
 
 	/// C++-only lookup — returns nullptr when the topic ID is not found.
 	const FDialogTopicStruct* GetDialogTopicSafe(int64 ID) const;

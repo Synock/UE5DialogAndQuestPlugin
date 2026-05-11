@@ -45,7 +45,7 @@ public:
 	//this is called from Server
 	virtual void AddQuest(const FQuestMetaData& QuestMeta);
 
-	virtual void GrantReward(TSubclassOf<UQuestRewardData> RewardData);
+	virtual void GrantReward(UQuestRewardData* RewardData);
 
 	//------------------------------------------------------------------------------------------------------------------
 	// State machine
