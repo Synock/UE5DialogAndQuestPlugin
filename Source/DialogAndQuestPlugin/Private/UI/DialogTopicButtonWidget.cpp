@@ -38,7 +38,12 @@ void UDialogTopicButtonWidget::InitData_Implementation(const FDialogTextData& It
 {
 	LocalData = ItemData;
 	if (TopicLabel)
-		TopicLabel->SetText(FText::FromString(ItemData.TopicName));
+	{
+		FString DisplayName = ItemData.TopicName;
+		if (!DisplayName.IsEmpty())
+			DisplayName[0] = FChar::ToUpper(DisplayName[0]);
+		TopicLabel->SetText(FText::FromString(DisplayName));
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

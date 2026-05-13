@@ -7,7 +7,9 @@
 #include "Misc/DialogAndQuestPluginHelper.h"
 
 // Returned by FindNextStep() when a step has no successor (last step or unknown step ID).
-// Identified by QuestID == 0 && QuestSubID == 0.  Never pass to ProgressQuest().
+// Identified by QuestID == 0 && QuestSubID == 0.
+// TryProgressQuest intentionally passes this sentinel to ProgressQuest() when the current step
+// is a FinishingStep; ProgressQuest detects it via IsStepSentinel() to trigger completion.
 static const FQuestStep GQuestStepSentinel;
 
 

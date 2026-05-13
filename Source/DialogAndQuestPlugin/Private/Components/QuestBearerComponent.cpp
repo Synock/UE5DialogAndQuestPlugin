@@ -127,13 +127,18 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 
 	// For non-repeatable quests: only progress if we're not already past this step.
 	// For repeatable quests: always allow re-progression on the same step.
+	// Sentinel exception: when the current step is a FinishingStep, TryProgressQuest passes the
+	// sentinel (QuestSubID == 0) as the "next" step to signal that the quest should complete.
+	// Without this check, single-step quests whose only step has QuestSubID == 0 would hit
+	// a false collision (sentinel.QuestSubID == 0 == ProgressID) and silently skip completion.
 	// Log before the gate so we always know whether it passed.
 	UDialogAndQuestPluginHelper::Log(FString::Printf(
 		TEXT("ProgressQuest QID=%lld: NextSubID=%d ProgressID=%d Repeatable=%d FinishingStep=%d State=%d"),
 		QuestMeta.QuestID, NextQuestStep.QuestSubID, QData.ProgressID, QData.Repeatable,
 		QData.CurrentStep.FinishingStep, static_cast<int32>(QData.State)));
 
-	if (NextQuestStep.QuestSubID != QData.ProgressID || QData.Repeatable)
+	const bool bNextIsSentinel = UQuestMainComponent::IsStepSentinel(NextQuestStep);
+	if (bNextIsSentinel || NextQuestStep.QuestSubID != QData.ProgressID || QData.Repeatable)
 	{
 		QData.CurrentStep.Completed = true;
 
