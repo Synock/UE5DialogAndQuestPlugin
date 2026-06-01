@@ -17,6 +17,11 @@ bool IDialogInterface::CanTrain() const
 	return false;
 }
 
+bool IDialogInterface::CanTrainPlayer(const AActor* /*Player*/) const
+{
+	return CanTrain();
+}
+
 bool IDialogInterface::CanBank() const
 {
 	return false;

@@ -54,6 +54,16 @@ public:
 
 	virtual bool CanTrain() const;
 
+	/**
+	 * Returns true if this actor can train Player's specific class.
+	 * Default implementation delegates to CanTrain() (no class check).
+	 * Game-side overrides (e.g. ANPC) should check the trainer's class bitmask
+	 * against the player's class.
+	 *
+	 * @param Player  The player pawn requesting training; may be nullptr.
+	 */
+	virtual bool CanTrainPlayer(const AActor* Player) const;
+
 	virtual bool CanBank() const;
 
 	virtual bool CanRepair() const;

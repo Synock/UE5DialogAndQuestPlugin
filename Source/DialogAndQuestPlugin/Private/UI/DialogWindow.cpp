@@ -90,7 +90,7 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 		Header->ConfigureButtons(
 			DialogActorInterface->CanTrade(),
 			DialogActorInterface->CanGive(),
-			DialogActorInterface->CanTrain(),
+			DialogActorInterface->CanTrainPlayer(GetOwningPlayerPawn()),
 			DialogActorInterface->CanBank(),
 			DialogActorInterface->CanRepair()
 		);
