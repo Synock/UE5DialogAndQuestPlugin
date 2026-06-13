@@ -179,6 +179,15 @@ public:
 		KnownQuestData.Add(MoveTemp(Data));
 		RebuildQuestLUT();
 	}
+
+	void Test_ProgressQuest(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
+	                        bool SkipReward = false, bool bSilent = false)
+	{
+		ApplyQuestProgress(QuestMeta, NextQuestStep, SkipReward, bSilent);
+	}
 #endif
 
+private:
+	void ApplyQuestProgress(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
+	                        bool SkipReward, bool bSilent);
 };

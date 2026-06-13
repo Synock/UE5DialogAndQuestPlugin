@@ -107,6 +107,14 @@ void UQuestBearerComponent::ProgressQuest(const FQuestMetaData& QuestMeta, const
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
 
+	ApplyQuestProgress(QuestMeta, NextQuestStep, SkipReward, bSilent);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::ApplyQuestProgress(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
+                                               bool SkipReward, bool bSilent)
+{
 	if (!KnownQuestDataLUT.Contains(QuestMeta.QuestID))
 		return;
 
