@@ -61,9 +61,11 @@ const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestD
 				const UQuestGiverComponent* GiverComp = Validator->GetQuestGiverComponent();
 				if (GiverComp)
 				{
+					const FQuestValidatableSteps* ValidatableSteps =
+						GiverComp->GetValidatableQuestSteps().Find(QuestData.QuestID);
 					for (const int32 BranchID : Step.NextStepIDs)
 					{
-						if (GiverComp->CanValidateQuestStep(QuestData.QuestID, BranchID))
+						if (ValidatableSteps && ValidatableSteps->Steps.Contains(BranchID))
 						{
 							for (const FQuestStep& Candidate : QuestData.Steps)
 								if (Candidate.QuestSubID == BranchID) return Candidate;
