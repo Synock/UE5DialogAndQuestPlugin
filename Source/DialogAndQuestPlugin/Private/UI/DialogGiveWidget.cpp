@@ -4,8 +4,8 @@
 void UDialogGiveWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	if (GiveButton)   GiveButton->OnClicked.AddDynamic(this,   &UDialogGiveWidget::OnGiveButtonClicked);
-	if (CancelButton) CancelButton->OnClicked.AddDynamic(this, &UDialogGiveWidget::OnCancelButtonClicked);
+	if (GiveButton)   GiveButton->OnClicked.AddUniqueDynamic(this,   &UDialogGiveWidget::OnGiveButtonClicked);
+	if (CancelButton) CancelButton->OnClicked.AddUniqueDynamic(this, &UDialogGiveWidget::OnCancelButtonClicked);
 }
 
 void UDialogGiveWidget::InitDialog(UObject* InputParentDialog)

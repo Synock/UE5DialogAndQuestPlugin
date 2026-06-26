@@ -7,7 +7,7 @@ void UQuestJournalButtonWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	if (QuestButton)
-		QuestButton->OnClicked.AddDynamic(this, &UQuestJournalButtonWidget::SelectQuest);
+		QuestButton->OnClicked.AddUniqueDynamic(this, &UQuestJournalButtonWidget::SelectQuest);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

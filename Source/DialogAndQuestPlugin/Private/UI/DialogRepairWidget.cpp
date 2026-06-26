@@ -7,7 +7,7 @@ void UDialogRepairWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	if (CloseButton)
-		CloseButton->OnClicked.AddDynamic(this, &UDialogRepairWidget::OnCloseButtonClicked);
+		CloseButton->OnClicked.AddUniqueDynamic(this, &UDialogRepairWidget::OnCloseButtonClicked);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

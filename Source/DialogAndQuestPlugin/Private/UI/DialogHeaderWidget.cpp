@@ -9,11 +9,11 @@ void UDialogHeaderWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (TradeButton)  TradeButton->OnClicked.AddDynamic(this,  &UDialogHeaderWidget::OnTradeButtonClicked);
-	if (GiveButton)   GiveButton->OnClicked.AddDynamic(this,   &UDialogHeaderWidget::OnGiveButtonClicked);
-	if (TrainButton)  TrainButton->OnClicked.AddDynamic(this,  &UDialogHeaderWidget::OnTrainButtonClicked);
-	if (BankButton)   BankButton->OnClicked.AddDynamic(this,   &UDialogHeaderWidget::OnBankButtonClicked);
-	if (RepairButton) RepairButton->OnClicked.AddDynamic(this, &UDialogHeaderWidget::OnRepairButtonClicked);
+	if (TradeButton)  TradeButton->OnClicked.AddUniqueDynamic(this,  &UDialogHeaderWidget::OnTradeButtonClicked);
+	if (GiveButton)   GiveButton->OnClicked.AddUniqueDynamic(this,   &UDialogHeaderWidget::OnGiveButtonClicked);
+	if (TrainButton)  TrainButton->OnClicked.AddUniqueDynamic(this,  &UDialogHeaderWidget::OnTrainButtonClicked);
+	if (BankButton)   BankButton->OnClicked.AddUniqueDynamic(this,   &UDialogHeaderWidget::OnBankButtonClicked);
+	if (RepairButton) RepairButton->OnClicked.AddUniqueDynamic(this, &UDialogHeaderWidget::OnRepairButtonClicked);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

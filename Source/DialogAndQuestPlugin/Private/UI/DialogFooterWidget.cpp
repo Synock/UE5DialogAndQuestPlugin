@@ -5,7 +5,7 @@ void UDialogFooterWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	if (CloseButton)
-		CloseButton->OnClicked.AddDynamic(this, &UDialogFooterWidget::OnCloseButtonClicked);
+		CloseButton->OnClicked.AddUniqueDynamic(this, &UDialogFooterWidget::OnCloseButtonClicked);
 }
 
 void UDialogFooterWidget::InitDialog(UObject* InputParentDialog)

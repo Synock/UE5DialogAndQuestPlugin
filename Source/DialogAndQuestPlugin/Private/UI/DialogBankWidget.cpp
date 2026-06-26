@@ -5,7 +5,7 @@ void UDialogBankWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	if (CloseButton)
-		CloseButton->OnClicked.AddDynamic(this, &UDialogBankWidget::OnCloseButtonClicked);
+		CloseButton->OnClicked.AddUniqueDynamic(this, &UDialogBankWidget::OnCloseButtonClicked);
 }
 
 void UDialogBankWidget::InitDialog(UObject* InputParentDialog)

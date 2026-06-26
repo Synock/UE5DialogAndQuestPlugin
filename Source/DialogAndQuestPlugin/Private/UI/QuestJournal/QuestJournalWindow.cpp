@@ -6,16 +6,16 @@ void UQuestJournalWindow::NativeConstruct()
 	Super::NativeConstruct();
 
 	if (ActiveTabButton)
-		ActiveTabButton->OnClicked.AddDynamic(this, &UQuestJournalWindow::OnActiveTabClicked);
+		ActiveTabButton->OnClicked.AddUniqueDynamic(this, &UQuestJournalWindow::OnActiveTabClicked);
 
 	if (FinishedTabButton)
-		FinishedTabButton->OnClicked.AddDynamic(this, &UQuestJournalWindow::OnFinishedTabClicked);
+		FinishedTabButton->OnClicked.AddUniqueDynamic(this, &UQuestJournalWindow::OnFinishedTabClicked);
 
 	if (RumoredTabButton)
-		RumoredTabButton->OnClicked.AddDynamic(this, &UQuestJournalWindow::OnRumoredTabClicked);
+		RumoredTabButton->OnClicked.AddUniqueDynamic(this, &UQuestJournalWindow::OnRumoredTabClicked);
 
 	// Auto-call InitJournal whenever this widget becomes visible
-	OnVisibilityChanged.AddDynamic(this, &UQuestJournalWindow::HandleVisibilityChanged);
+	OnVisibilityChanged.AddUniqueDynamic(this, &UQuestJournalWindow::HandleVisibilityChanged);
 
 	// Eagerly initialize if the player controller is already available at construction time.
 	// bInitialized guards against duplicate delegate bindings on subsequent calls.
@@ -44,7 +44,7 @@ void UQuestJournalWindow::InitJournal()
 		if (!QuestComponent)
 			return;
 
-		QuestComponent->KnownQuestDispatcher.AddDynamic(this, &UQuestJournalWindow::UpdateKnownQuest);
+		QuestComponent->KnownQuestDispatcher.AddUniqueDynamic(this, &UQuestJournalWindow::UpdateKnownQuest);
 
 		if (ListWidget)
 			ListWidget->InitDialog(this);

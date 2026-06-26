@@ -9,7 +9,7 @@ void UDialogTopicButtonWidget::NativeConstruct()
 	// ParentDialogObject and LocalData are populated later by NativeOnListItemObjectSet
 	// before the user can interact, so reading them at click-time is safe.
 	if (TopicButton)
-		TopicButton->OnClicked.AddDynamic(this, &UDialogTopicButtonWidget::OnTopicButtonClicked);
+		TopicButton->OnClicked.AddUniqueDynamic(this, &UDialogTopicButtonWidget::OnTopicButtonClicked);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

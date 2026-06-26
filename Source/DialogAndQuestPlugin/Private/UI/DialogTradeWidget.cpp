@@ -5,7 +5,7 @@ void UDialogTradeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	if (CloseButton)
-		CloseButton->OnClicked.AddDynamic(this, &UDialogTradeWidget::OnCloseButtonClicked);
+		CloseButton->OnClicked.AddUniqueDynamic(this, &UDialogTradeWidget::OnCloseButtonClicked);
 }
 
 void UDialogTradeWidget::InitDialog(UObject* InputParentDialog)
