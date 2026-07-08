@@ -14,6 +14,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrainButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBankButtonEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRepairButtonEvent);
 
+class USoundBase;
+
 /**
  * Default concrete implementation of IDialogWindowInterface.
  *
@@ -42,6 +44,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Dialog")
 	FString RelationString;
+
+	int32 GreetingVoiceoverRequestSerial = 0;
 
 	// Widget bindings ------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
@@ -79,6 +83,11 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void PostInitRelation();
+
+	void InvalidatePendingGreetingVoiceover();
+	void StopVoiceoverForServiceTab();
+	void RequestGreetingVoiceover(const TSoftObjectPtr<USoundBase>& GreetingVoiceover);
+	bool ShouldPlayPendingGreetingVoiceover(int32 RequestSerial) const;
 
 public:
 	// IDialogWindowInterface — data accessors ------------------------------------

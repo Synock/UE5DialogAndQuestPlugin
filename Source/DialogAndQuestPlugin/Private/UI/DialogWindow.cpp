@@ -5,6 +5,7 @@
 #include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogInterface.h"
 #include "Interfaces/QuestBearerInterface.h"
+#include "Sound/SoundBase.h"
 #include "UI/DialogBankWidget.h"
 #include "UI/DialogFooterWidget.h"
 #include "UI/DialogGiveWidget.h"
@@ -64,6 +65,7 @@ void UDialogWindow::AddRepairWidget(UDialogRepairWidget* RepairWidget)
 void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialogComponent, AActor* ActorDialog)
 {
 	check(InputDialogComponent);
+	InvalidatePendingGreetingVoiceover();
 
 	DialogActor = ActorDialog;
 
@@ -84,6 +86,7 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 	Header->InitDialog(this);
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
+	DisplayMainDialogWidget_Implementation();
 
 	if (Header && DialogActorInterface)
 	{
@@ -119,25 +122,11 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 		TopicText->AddEmptyTopicData(ChosenBadGreeting.ToString());
 	}
 
-	// Async greeting voiceover
 	const TSoftObjectPtr<USoundBase> GreetingVO = bGoodGreeting
 		? DialogComponent->GetGoodGreetingVoiceover()
 		: DialogComponent->GetBadGreetingVoiceover();
 
-	if (!GreetingVO.IsNull())
-	{
-		TWeakObjectPtr<UDialogComponent> WeakComp(DialogComponent.Get());
-		UAssetManager::GetStreamableManager().RequestAsyncLoad(
-			GreetingVO.ToSoftObjectPath(),
-			FStreamableDelegate::CreateWeakLambda(this,
-				[WeakComp, SoftVO = GreetingVO]()
-				{
-					if (UDialogComponent* DC = WeakComp.Get())
-						if (USoundBase* Sound = SoftVO.Get())
-							DC->OnVoiceoverRequested.Broadcast(Sound, 0.f);
-				})
-		);
-	}
+	RequestGreetingVoiceover(GreetingVO);
 
 	if (IQuestBearerInterface* BearerInterface = Cast<IQuestBearerInterface>(GetOwningPlayer()))
 	{
@@ -150,6 +139,8 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 
 void UDialogWindow::CloseWindow_Implementation()
 {
+	InvalidatePendingGreetingVoiceover();
+
 	if (DialogComponent)
 		DialogComponent->OnVoiceoverStop.Broadcast();
 
@@ -246,6 +237,7 @@ void UDialogWindow::DisplayMainDialogWidget_Implementation()
 
 void UDialogWindow::DisplayTradeWidget_Implementation()
 {
+	StopVoiceoverForServiceTab();
 	OnTrade.Broadcast();
 	if (TradeWidgetPointer)
 	{
@@ -256,6 +248,7 @@ void UDialogWindow::DisplayTradeWidget_Implementation()
 
 void UDialogWindow::DisplayGiveWidget_Implementation()
 {
+	StopVoiceoverForServiceTab();
 	OnGive.Broadcast();
 	if (GiveWidgetPointer)
 	{
@@ -266,6 +259,7 @@ void UDialogWindow::DisplayGiveWidget_Implementation()
 
 void UDialogWindow::DisplayTrainDialogWidget_Implementation()
 {
+	StopVoiceoverForServiceTab();
 	OnTrain.Broadcast();
 	if (TrainWidgetPointer)
 	{
@@ -277,6 +271,7 @@ void UDialogWindow::DisplayTrainDialogWidget_Implementation()
 
 void UDialogWindow::DisplayBankDialogWidget_Implementation()
 {
+	StopVoiceoverForServiceTab();
 	OnBank.Broadcast();
 	if (BankWidgetPointer)
 	{
@@ -288,6 +283,7 @@ void UDialogWindow::DisplayBankDialogWidget_Implementation()
 
 void UDialogWindow::DisplayRepairDialogWidget_Implementation()
 {
+	StopVoiceoverForServiceTab();
 	OnRepair.Broadcast();
 	if (RepairWidgetPointer)
 	{
@@ -295,4 +291,59 @@ void UDialogWindow::DisplayRepairDialogWidget_Implementation()
 		TopicList->SetIsEnabled(false);
 		RepairWidgetPointer->DoOnDisplay();
 	}
+}
+
+void UDialogWindow::InvalidatePendingGreetingVoiceover()
+{
+	++GreetingVoiceoverRequestSerial;
+}
+
+void UDialogWindow::StopVoiceoverForServiceTab()
+{
+	InvalidatePendingGreetingVoiceover();
+
+	if (DialogComponent)
+	{
+		DialogComponent->OnVoiceoverStop.Broadcast();
+	}
+}
+
+void UDialogWindow::RequestGreetingVoiceover(const TSoftObjectPtr<USoundBase>& GreetingVoiceover)
+{
+	if (GreetingVoiceover.IsNull())
+	{
+		return;
+	}
+
+	const int32 RequestSerial = GreetingVoiceoverRequestSerial;
+	TWeakObjectPtr<UDialogComponent> WeakComp(DialogComponent.Get());
+	UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		GreetingVoiceover.ToSoftObjectPath(),
+		FStreamableDelegate::CreateWeakLambda(this,
+			[WeakComp, SoftVO = GreetingVoiceover, WeakWindow = TWeakObjectPtr<UDialogWindow>(this), RequestSerial]()
+			{
+				UDialogWindow* Window = WeakWindow.Get();
+				if (!Window || !Window->ShouldPlayPendingGreetingVoiceover(RequestSerial))
+				{
+					return;
+				}
+
+				if (UDialogComponent* DC = WeakComp.Get())
+				{
+					if (USoundBase* Sound = SoftVO.Get())
+					{
+						DC->OnVoiceoverRequested.Broadcast(Sound, 0.f);
+					}
+				}
+			})
+	);
+}
+
+bool UDialogWindow::ShouldPlayPendingGreetingVoiceover(int32 RequestSerial) const
+{
+	return GreetingVoiceoverRequestSerial == RequestSerial &&
+		DialogComponent &&
+		WidgetSwitcher &&
+		TopicText &&
+		WidgetSwitcher->GetActiveWidget() == TopicText;
 }
