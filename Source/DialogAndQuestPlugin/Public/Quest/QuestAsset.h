@@ -57,12 +57,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest|Botch")
 	TArray<int32> BotchItemIDs;
 
+	/** True when this quest has at least one item-loss botch condition. Used by the editor details panel. */
+	UFUNCTION()
+	bool HasBotchItemIDs() const
+	{
+		return !BotchItemIDs.IsEmpty();
+	}
+
 	/**
 	 * Journal text shown when the quest is botched via BotchItemIDs item loss.
 	 * Ignored when BotchItemIDs is empty.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest|Botch",
-		meta = (EditCondition = "BotchItemIDs.Num() > 0", MultiLine = true))
+		meta = (EditCondition = "HasBotchItemIDs", MultiLine = true))
 	FText ItemLossBotchDescription;
 
 	/// Convert this asset to an FQuestMetaData struct for runtime use.
@@ -96,4 +103,3 @@ public:
 	UEdGraph* EditorGraph = nullptr;
 #endif
 };
-

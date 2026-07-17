@@ -241,8 +241,7 @@ struct FQuestMetaData : public FTableRowBase
 	 * Ignored when BotchItemIDs is empty.
 	 * Example: "You lost the crate of defective arrows. Guard Weleth will have to find another courier."
 	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch",
-		meta = (EditCondition = "BotchItemIDs.Num() > 0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Botch")
 	FText ItemLossBotchDescription;
 };
 

@@ -3,6 +3,7 @@
 #include "DetailCustomization/QuestAssetDetailCustomization.h"
 
 #include "Quest/QuestAsset.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailWidgetRow.h"
@@ -10,6 +11,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "ScopedTransaction.h"
 
 #define LOCTEXT_NAMESPACE "QuestAssetDetailCustomization"
 
@@ -36,6 +38,16 @@ void FQuestAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
 	ToolsCategory.AddCustomRow(LOCTEXT("ToolsRow", "Tools"))
 	[
 		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 2.f)
+		[
+			SNew(SButton)
+			.Text(LOCTEXT("AssignNextQuestID", "Assign Next Quest ID"))
+			.ToolTipText(LOCTEXT("AssignNextQuestIDTip",
+				"Assigns the selected quest the next ID after the highest non-zero QuestID\n"
+				"found in project Quest Assets, then syncs every step. This does not reserve\n"
+				"an ID in the persistence database."))
+			.OnClicked(this, &FQuestAssetDetailCustomization::OnAssignNextQuestID)
+		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 2.f)
 		[
 			SNew(SButton)
@@ -119,6 +131,51 @@ void FQuestAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
 	];
 }
 
+FReply FQuestAssetDetailCustomization::OnAssignNextQuestID()
+{
+	if (!QuestAssetPtr.IsValid())
+		return FReply::Handled();
+
+	UQuestAsset* Asset = QuestAssetPtr.Get();
+	int64 MaxQuestID = FMath::Max<int64>(0, Asset->QuestID);
+
+	FARFilter Filter;
+	Filter.ClassPaths.Add(UQuestAsset::StaticClass()->GetClassPathName());
+	Filter.bRecursiveClasses = true;
+
+	TArray<FAssetData> QuestAssetData;
+	FAssetRegistryModule& AssetRegistryModule =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	AssetRegistryModule.Get().GetAssets(Filter, QuestAssetData);
+
+	for (const FAssetData& AssetData : QuestAssetData)
+	{
+		if (const UQuestAsset* ProjectQuest = Cast<UQuestAsset>(AssetData.GetAsset()))
+			MaxQuestID = FMath::Max(MaxQuestID, ProjectQuest->QuestID);
+	}
+
+	if (MaxQuestID == TNumericLimits<int64>::Max())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot assign a QuestID: the project already uses INT64_MAX."));
+		return FReply::Handled();
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("AssignNextQuestIDTransaction", "Assign Next Quest ID"));
+	Asset->Modify();
+
+	const int64 NextQuestID = MaxQuestID + 1;
+	Asset->QuestID = NextQuestID;
+	for (FQuestStep& Step : Asset->Steps)
+		Step.QuestID = NextQuestID;
+
+	Asset->MarkPackageDirty();
+
+	if (CachedDetailBuilder)
+		CachedDetailBuilder->ForceRefreshDetails();
+
+	return FReply::Handled();
+}
+
 FReply FQuestAssetDetailCustomization::OnSyncStepQuestIDs()
 {
 	if (!QuestAssetPtr.IsValid())
@@ -154,5 +211,4 @@ FReply FQuestAssetDetailCustomization::OnAutoSequenceSubIDs()
 }
 
 #undef LOCTEXT_NAMESPACE
-
 

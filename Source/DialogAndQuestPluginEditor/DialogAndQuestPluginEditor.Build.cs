@@ -25,6 +25,7 @@ public class DialogAndQuestPluginEditor : ModuleRules
 				"SlateCore",
 				"UnrealEd",
 				"AssetTools",
+				"AssetRegistry",
 				"EditorStyle",
 				"PropertyEditor",
 				"InputCore",
