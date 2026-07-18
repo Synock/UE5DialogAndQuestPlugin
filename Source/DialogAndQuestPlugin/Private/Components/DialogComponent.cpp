@@ -47,6 +47,7 @@ void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset, float FactionGre
 
 	GoodGreeting              = Asset->GoodGreeting;
 	BadGreeting               = Asset->BadGreeting;
+	ConditionalGreetings      = Asset->ConditionalGreetings;
 
 	// If the asset uses the sentinel (-1), fall back to the faction-wide default.
 	// Otherwise the asset's own value takes precedence (allows per-NPC overrides).
@@ -58,6 +59,8 @@ void UDialogComponent::InitDialogFromAsset(UDialogAsset* Asset, float FactionGre
 	BadGreetingVoiceover      = Asset->BadGreetingVoiceover;
 	GoodGreetingVoiceoverPath = GoodGreetingVoiceover.ToSoftObjectPath().ToString();
 	BadGreetingVoiceoverPath  = BadGreetingVoiceover.ToSoftObjectPath().ToString();
+	for (FConditionalGreeting& Greeting : ConditionalGreetings)
+		Greeting.VoiceoverPath = Greeting.Voiceover.ToSoftObjectPath().ToString();
 
 	// Process shared assets first so NPC-specific topics take precedence:
 	// AddTopicsFromAsset skips a topic ID if already present, so the LAST caller for a given ID wins.
@@ -164,6 +167,9 @@ void UDialogComponent::InitDialogFromID(int64 ID)
 	BadGreetingVoiceover    = MainDialog->GetBadGreetingVoiceover(ID);
 	GoodGreetingVoiceoverPath = GoodGreetingVoiceover.ToSoftObjectPath().ToString();
 	BadGreetingVoiceoverPath  = BadGreetingVoiceover.ToSoftObjectPath().ToString();
+	ConditionalGreetings      = MainDialog->GetConditionalGreetings(ID);
+	for (FConditionalGreeting& Greeting : ConditionalGreetings)
+		Greeting.VoiceoverPath = Greeting.Voiceover.ToSoftObjectPath().ToString();
 	bDialogInitialized      = true;
 
 	for (const FDialogTopicStruct& DialogData : MainDialog->GetAllDialogTopicForMetaBundle(ID))
@@ -360,6 +366,28 @@ void UDialogComponent::OnRep_GreetingVoiceovers()
 		BadGreetingVoiceover = TSoftObjectPtr<USoundBase>(FSoftObjectPath(BadGreetingVoiceoverPath));
 }
 
+void UDialogComponent::OnRep_ConditionalGreetings()
+{
+	for (FConditionalGreeting& Greeting : ConditionalGreetings)
+	{
+		if (!Greeting.VoiceoverPath.IsEmpty())
+			Greeting.Voiceover = TSoftObjectPtr<USoundBase>(FSoftObjectPath(Greeting.VoiceoverPath));
+	}
+}
+
+bool UDialogComponent::FindConditionalGreeting(const AActor* DialogActor, const APlayerController* Controller,
+	FText& OutText, TSoftObjectPtr<USoundBase>& OutVoiceover) const
+{
+	if (const FConditionalGreeting* Greeting = FindFirstMatchingConditionalGreeting(ConditionalGreetings, DialogActor, Controller))
+	{
+		OutText = Greeting->Text;
+		OutVoiceover = Greeting->GetVoiceover();
+		return true;
+	}
+
+	return false;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -373,4 +401,5 @@ void UDialogComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UDialogComponent, bDialogInitialized);
 	DOREPLIFETIME(UDialogComponent, GoodGreetingVoiceoverPath);
 	DOREPLIFETIME(UDialogComponent, BadGreetingVoiceoverPath);
+	DOREPLIFETIME(UDialogComponent, ConditionalGreetings);
 }

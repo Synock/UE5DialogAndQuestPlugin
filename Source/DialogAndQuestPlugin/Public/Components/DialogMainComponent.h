@@ -87,4 +87,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	TSoftObjectPtr<USoundBase> GetBadGreetingVoiceover(int64 BundleMetaId) const;
+
+	TArray<FConditionalGreeting> GetConditionalGreetings(int64 BundleMetaId) const;
 };

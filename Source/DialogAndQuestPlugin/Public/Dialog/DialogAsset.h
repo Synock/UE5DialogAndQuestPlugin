@@ -43,6 +43,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Greeting|Voiceover")
 	TSoftObjectPtr<USoundBase> BadGreetingVoiceover;
 
+	/// Ordered rules evaluated before the normal good/bad greeting. Empty by default.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Greeting|Conditional")
+	TArray<FConditionalGreeting> ConditionalGreetings;
+
 	/// All dialog topics owned by this asset.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialog|Topics")
 	TArray<FDialogTopicStruct> Topics;
@@ -82,4 +86,3 @@ private:
 	bool HasSharedAssetCycle(const UDialogAsset* Node, TSet<const UDialogAsset*>& Visited, TSet<const UDialogAsset*>& Stack) const;
 #endif
 };
-

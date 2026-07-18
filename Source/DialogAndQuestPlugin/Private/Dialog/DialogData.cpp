@@ -6,19 +6,23 @@
 #include "Interfaces/QuestBearerInterface.h"
 #include "Misc/DialogAndQuestPluginHelper.h"
 
-bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APlayerController* Controller) const
+bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APlayerController* Controller,
+	bool bCheckRelation, bool bRequireQuestNotKnown) const
 {
 	if (!Controller)
 		return false;
 
 	// Relation check
 	bool bRelationOK = true;
-	if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor))
+	if (bCheckRelation)
 	{
-		if (Controller->GetPawn())
-			bRelationOK = DialogInterfaceActor->GetRelation(Controller->GetPawn()) >= MinimumRelation;
-		else
-			bRelationOK = false;
+		if (const IDialogInterface* DialogInterfaceActor = Cast<IDialogInterface>(DialogActor))
+		{
+			if (Controller->GetPawn())
+				bRelationOK = DialogInterfaceActor->GetRelation(Controller->GetPawn()) >= MinimumRelation;
+			else
+				bRelationOK = false;
+		}
 	}
 
 	// Skill check (game-agnostic via interface)
@@ -68,11 +72,17 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 	}
 
 	// Quest condition
+	if (bRequireQuestNotKnown && GetQuestID() == 0)
+		return false;
+
 	if (GetQuestID() != 0)
 	{
 		const IQuestBearerInterface* QuestBearer = Cast<IQuestBearerInterface>(Controller);
 		if (!QuestBearer)
 			return false;
+
+		if (bRequireQuestNotKnown)
+			return !QuestBearer->IsQuestKnown(GetQuestID()) && bRelationOK;
 
 		const bool bHasStateFilter = RequiredQuestState != EQuestState::Unknown;
 		const bool bHasStepFilter  = MinimumStepID != 0;
@@ -103,4 +113,28 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 	}
 
 	return bRelationOK;
+}
+
+bool FConditionalGreeting::Matches(const AActor* DialogActor, const APlayerController* Controller) const
+{
+	return !Text.IsEmpty() && Condition.VerifyCondition(DialogActor, Controller, bCheckRelation, bRequireQuestNotKnown);
+}
+
+TSoftObjectPtr<USoundBase> FConditionalGreeting::GetVoiceover() const
+{
+	return !VoiceoverPath.IsEmpty()
+		? TSoftObjectPtr<USoundBase>(FSoftObjectPath(VoiceoverPath))
+		: Voiceover;
+}
+
+const FConditionalGreeting* FindFirstMatchingConditionalGreeting(
+	const TArray<FConditionalGreeting>& Greetings, const AActor* DialogActor, const APlayerController* Controller)
+{
+	for (const FConditionalGreeting& Greeting : Greetings)
+	{
+		if (Greeting.Matches(DialogActor, Controller))
+			return &Greeting;
+	}
+
+	return nullptr;
 }

@@ -109,22 +109,27 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 	TopicText->ClearList();
 	TopicList->UpdateTopicData();
 
+	FText GreetingText;
+	TSoftObjectPtr<USoundBase> GreetingVO;
+	const bool bHasConditionalGreeting = DialogComponent->FindConditionalGreeting(
+		DialogActor, GetOwningPlayer(), GreetingText, GreetingVO);
 	const bool bGoodGreeting = RelationValue >= DialogComponent->GetGreetingLimit();
-	if (bGoodGreeting)
-		TopicText->AddEmptyTopicData(DialogComponent->GetGoodGreeting().ToString());
-	else
+	if (!bHasConditionalGreeting && bGoodGreeting)
+	{
+		GreetingText = DialogComponent->GetGoodGreeting();
+		GreetingVO = DialogComponent->GetGoodGreetingVoiceover();
+	}
+	else if (!bHasConditionalGreeting)
 	{
 		// Allow the NPC (or any IDialogInterface implementor) to supply a context-aware
 		// Falls back to the static BadGreeting in the DialogComponent when not overridden.
 		FText ChosenBadGreeting = DialogActorInterface
 			? DialogActorInterface->GetContextualBadGreeting(RelationValue, GetOwningPlayerPawn())
 			: DialogComponent->GetBadGreeting();
-		TopicText->AddEmptyTopicData(ChosenBadGreeting.ToString());
+		GreetingText = ChosenBadGreeting;
+		GreetingVO = DialogComponent->GetBadGreetingVoiceover();
 	}
-
-	const TSoftObjectPtr<USoundBase> GreetingVO = bGoodGreeting
-		? DialogComponent->GetGoodGreetingVoiceover()
-		: DialogComponent->GetBadGreetingVoiceover();
+	TopicText->AddEmptyTopicData(GreetingText.ToString());
 
 	RequestGreetingVoiceover(GreetingVO);
 

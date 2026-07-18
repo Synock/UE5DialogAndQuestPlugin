@@ -93,8 +93,15 @@ protected:
 	UPROPERTY(ReplicatedUsing=OnRep_GreetingVoiceovers, BlueprintReadOnly)
 	FString BadGreetingVoiceoverPath;
 
+	/// Ordered generic rules replicated to clients, where the owning player's state is available.
+	UPROPERTY(ReplicatedUsing=OnRep_ConditionalGreetings, BlueprintReadOnly)
+	TArray<FConditionalGreeting> ConditionalGreetings;
+
 	UFUNCTION()
 	void OnRep_GreetingVoiceovers();
+
+	UFUNCTION()
+	void OnRep_ConditionalGreetings();
 
 	UFUNCTION()
 	virtual void OnRep_DialogData();
@@ -146,6 +153,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	TSoftObjectPtr<USoundBase> GetBadGreetingVoiceover() const { return BadGreetingVoiceover; }
+
+	/** Returns the first matching conditional greeting, if any. */
+	bool FindConditionalGreeting(const AActor* DialogActor, const APlayerController* Controller,
+		FText& OutText, TSoftObjectPtr<USoundBase>& OutVoiceover) const;
 
 	/// Fired when a topic with a voiceover cue is displayed.
 	UPROPERTY(BlueprintAssignable)

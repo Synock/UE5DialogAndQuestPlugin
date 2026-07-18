@@ -134,8 +134,57 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition")
 	bool bConsumeOnUse = false;
 
-	bool VerifyCondition(const AActor* DialogActor, const APlayerController* Controller) const;
+	/**
+	 * Evaluates this generic condition. Callers may opt out of relation evaluation
+	 * when relation is not meaningful for their surface (for example, a story greeting).
+	 * bRequireQuestNotKnown requires Quest to be assigned and the player not to know it.
+	 */
+	bool VerifyCondition(const AActor* DialogActor, const APlayerController* Controller,
+		bool bCheckRelation = true, bool bRequireQuestNotKnown = false) const;
 };
+
+/**
+ * An ordered, asset-authored greeting which can override the regular good/bad greeting.
+ * Conditions deliberately use only plugin contracts; games provide their own quest,
+ * inventory, and skill data through the existing dialog interfaces.
+ */
+USTRUCT(BlueprintType)
+struct DIALOGANDQUESTPLUGIN_API FConditionalGreeting
+{
+	GENERATED_BODY()
+
+	/// Stable authoring/export identity. Must be unique within the owning dialog asset.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting")
+	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting", meta = (MultiLine = "true"))
+	FText Text;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Voiceover")
+	TSoftObjectPtr<USoundBase> Voiceover;
+
+	/// Replicated runtime representation of Voiceover; populated by UDialogComponent on the server.
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Greeting|Voiceover")
+	FString VoiceoverPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Condition")
+	FDialogTopicCondition Condition;
+
+	/// Conditional greetings ignore relation by default so story state can override good/bad greetings.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Condition")
+	bool bCheckRelation = false;
+
+	/// Matches only when Condition.Quest is assigned and the player has never encountered that quest.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Condition")
+	bool bRequireQuestNotKnown = false;
+
+	bool Matches(const AActor* DialogActor, const APlayerController* Controller) const;
+	TSoftObjectPtr<USoundBase> GetVoiceover() const;
+};
+
+/** Returns the first matching greeting in authoring order, or nullptr when no rule matches. */
+DIALOGANDQUESTPLUGIN_API const FConditionalGreeting* FindFirstMatchingConditionalGreeting(
+	const TArray<FConditionalGreeting>& Greetings, const AActor* DialogActor, const APlayerController* Controller);
 
 ///@brief Consequence triggered when the player clicks a dialog topic.
 USTRUCT(BlueprintType)
@@ -284,5 +333,9 @@ struct FDialogTopicMetaBundleStruct : public FTableRowBase
 	/// Voiceover for the bad greeting.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Voiceover")
 	TSoftObjectPtr<USoundBase> BadGreetingVoiceover;
+
+	/// Ordered conditional greetings. Empty by default, preserving legacy good/bad behavior.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Greeting|Conditional")
+	TArray<FConditionalGreeting> ConditionalGreetings;
 };
 

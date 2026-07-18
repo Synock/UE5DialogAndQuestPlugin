@@ -8,6 +8,39 @@
 EDataValidationResult UDialogAsset::IsDataValid(FDataValidationContext& Context) const
 {
 	EDataValidationResult Result = Super::IsDataValid(Context);
+	TSet<FName> ConditionalGreetingIds;
+	for (const FConditionalGreeting& Greeting : ConditionalGreetings)
+	{
+		if (Greeting.Id.IsNone())
+		{
+			Context.AddError(FText::FromString(TEXT("Conditional greetings require a non-empty Id for dialogue-pipeline export.")));
+			Result = EDataValidationResult::Invalid;
+		}
+		else if (ConditionalGreetingIds.Contains(Greeting.Id))
+		{
+			Context.AddError(FText::FromString(FString::Printf(
+				TEXT("Conditional greeting Id '%s' is duplicated. Ids must be unique within a dialog asset."), *Greeting.Id.ToString())));
+			Result = EDataValidationResult::Invalid;
+		}
+		else
+		{
+			ConditionalGreetingIds.Add(Greeting.Id);
+		}
+
+		if (Greeting.Text.IsEmpty())
+		{
+			Context.AddError(FText::FromString(FString::Printf(
+				TEXT("Conditional greeting '%s' has no text."), *Greeting.Id.ToString())));
+			Result = EDataValidationResult::Invalid;
+		}
+
+		if (Greeting.bRequireQuestNotKnown && Greeting.Condition.GetQuestID() == 0)
+		{
+			Context.AddError(FText::FromString(FString::Printf(
+				TEXT("Conditional greeting '%s' requires a Quest when 'Require Quest Not Known' is enabled."), *Greeting.Id.ToString())));
+			Result = EDataValidationResult::Invalid;
+		}
+	}
 
 	TSet<const UDialogAsset*> Visited;
 	TSet<const UDialogAsset*> Stack;
@@ -53,4 +86,3 @@ bool UDialogAsset::HasSharedAssetCycle(const UDialogAsset* Node, TSet<const UDia
 }
 
 #endif // WITH_EDITOR
-

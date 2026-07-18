@@ -117,6 +117,7 @@ void UDialogMainComponent::AddFromAsset(UDialogAsset* DialogAsset)
 	MetaBundle.MetaName            = DialogAsset->AssetName;
 	MetaBundle.GoodGreetingVoiceover = DialogAsset->GoodGreetingVoiceover;
 	MetaBundle.BadGreetingVoiceover  = DialogAsset->BadGreetingVoiceover;
+	MetaBundle.ConditionalGreetings  = DialogAsset->ConditionalGreetings;
 
 	// Include shared bundles first so they appear before NPC-specific topics.
 	MetaBundle.TopicBundleList.Append(SharedBundleIds);
@@ -243,4 +244,12 @@ TSoftObjectPtr<USoundBase> UDialogMainComponent::GetBadGreetingVoiceover(int64 B
 		return MetaIterator->BadGreetingVoiceover;
 
 	return nullptr;
+}
+
+TArray<FConditionalGreeting> UDialogMainComponent::GetConditionalGreetings(int64 BundleMetaId) const
+{
+	if (const FDialogTopicMetaBundleStruct* MetaIterator = DialogMetaBundle.Find(BundleMetaId))
+		return MetaIterator->ConditionalGreetings;
+
+	return {};
 }
