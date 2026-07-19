@@ -167,6 +167,11 @@ public:
 	bool CanValidateStepWithItems(int64 QuestID, int32 StepID, const TArray<int32>& InputItems, float InputCoins,
 		TArray<int32>& OutputItems, float& OutputCoins);
 
+	bool RemoveQuestData(int64 QuestID, bool bBroadcast = true);
+	void ClearAllQuestData(bool bBroadcast = true);
+	void ReplaceQuestData(const TArray<FQuestProgressData>& NewQuestData, bool bBroadcast = true);
+	bool AuthoritySetQuestData(int64 QuestID, int32 StepID, EQuestState NewState, bool bBroadcast = true);
+
 #if WITH_AUTOMATION_TESTS
 	/**
 	 * Test-only: directly inject a pre-built FQuestProgressData entry into KnownQuestData
@@ -190,4 +195,5 @@ public:
 private:
 	void ApplyQuestProgress(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
 	                        bool SkipReward, bool bSilent);
+	void PopulateBranchAlternatives(FQuestProgressData& QuestData, const FQuestMetaData& QuestMeta) const;
 };

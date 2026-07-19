@@ -167,22 +167,8 @@ void UQuestBearerComponent::ApplyQuestProgress(const FQuestMetaData& QuestMeta, 
 
 		// Build BranchAlternatives so the journal can render "OR" blocks when the player
 		// faces a branching or parallel choice.  Cleared for non-dispatch steps.
-		QData.BranchAlternatives.Empty();
-		if (NewStepProgress.StepType == EQuestStepType::Branch ||
-			NewStepProgress.StepType == EQuestStepType::Parallel)
-		{
-			for (const int32 BranchID : NewStepProgress.NextStepIDs)
-			{
-				for (const FQuestStep& BranchStep : QuestMeta.Steps)
-				{
-					if (BranchStep.QuestSubID == BranchID)
-					{
-						QData.BranchAlternatives.Add(FQuestProgressStep(BranchStep));
-						break;
-					}
-				}
-			}
-		}
+		QData.CurrentStep = MoveTemp(NewStepProgress);
+		PopulateBranchAlternatives(QData, QuestMeta);
 
 		// Completion is driven by the step the player JUST COMPLETED, now archived as
 		// PreviousStep.Last(), NOT by the destination step (NextQuestStep).
@@ -192,8 +178,8 @@ void UQuestBearerComponent::ApplyQuestProgress(const FQuestMetaData& QuestMeta, 
 		// finishing step's reward was never granted.
 		if (QData.PreviousStep.Last().FinishingStep)
 		{
-			NewStepProgress.Completed = true;
 			QData.State = EQuestState::Completed;
+			QData.CurrentStep.Completed = true;
 		}
 		else
 		{
@@ -201,8 +187,6 @@ void UQuestBearerComponent::ApplyQuestProgress(const FQuestMetaData& QuestMeta, 
 			if (QData.State == EQuestState::Achieved)
 				QData.State = EQuestState::Accepted;
 		}
-
-		QData.CurrentStep = MoveTemp(NewStepProgress);
 
 		if (!bSilent)
 			QuestUpdateDispatcher.Broadcast(QData.QuestID, QData.CurrentStep.QuestSubID, QData.State);
@@ -229,7 +213,10 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 		NewQuestData.ProgressID = 0;
 		NewQuestData.State = EQuestState::Accepted;
 		if (!QuestMeta.Steps.IsEmpty())
+		{
 			NewQuestData.CurrentStep = FQuestProgressStep(QuestMeta.Steps[0]);
+			PopulateBranchAlternatives(NewQuestData, QuestMeta);
+		}
 		KnownQuestData.Add(MoveTemp(NewQuestData));
 
 		RebuildQuestLUT();
@@ -253,7 +240,10 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 			Existing.ProgressID = 0;
 			Existing.PreviousStep.Empty();
 			if (!QuestMeta.Steps.IsEmpty())
+			{
 				Existing.CurrentStep = FQuestProgressStep(QuestMeta.Steps[0]);
+				PopulateBranchAlternatives(Existing, QuestMeta);
+			}
 			QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID, 0, EQuestState::Accepted);
 		}
 	}
@@ -313,6 +303,120 @@ bool UQuestBearerComponent::CanValidateStepWithItems(int64 QuestID, int32 StepID
 	const bool GivenCashIsOk = NecessaryCoins <= 0.f;
 
 	return GivenItemIsOK && GivenCashIsOk;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestBearerComponent::RemoveQuestData(int64 QuestID, bool bBroadcast)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+		return false;
+
+	const int32 Removed = KnownQuestData.RemoveAll([QuestID](const FQuestProgressData& Data)
+	{
+		return Data.QuestID == QuestID;
+	});
+	if (Removed <= 0)
+		return false;
+
+	RebuildQuestLUT();
+	if (bBroadcast)
+		OnRep_KnownQuest();
+	return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::ClearAllQuestData(bool bBroadcast)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+		return;
+
+	KnownQuestData.Reset();
+	KnownQuestDataLUT.Reset();
+	if (bBroadcast)
+		OnRep_KnownQuest();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::ReplaceQuestData(const TArray<FQuestProgressData>& NewQuestData, bool bBroadcast)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+		return;
+
+	KnownQuestData = NewQuestData;
+	RebuildQuestLUT();
+	if (bBroadcast)
+		OnRep_KnownQuest();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestBearerComponent::AuthoritySetQuestData(int64 QuestID, int32 StepID, EQuestState NewState,
+	bool bBroadcast)
+{
+	if (GetOwnerRole() != ROLE_Authority || QuestID <= 0 || NewState == EQuestState::Unknown)
+		return false;
+
+	IDialogGameModeInterface* GM = Cast<IDialogGameModeInterface>(GetWorld()->GetAuthGameMode());
+	if (!GM || !GM->GetMainQuestComponent())
+		return false;
+
+	UQuestMainComponent* MainQuestComponent = GM->GetMainQuestComponent();
+	const FQuestMetaData& QuestMeta = MainQuestComponent->GetQuestData(QuestID);
+	if (QuestMeta.QuestID == 0)
+		return false;
+
+	FQuestProgressData NewData;
+	NewData.QuestID = QuestMeta.QuestID;
+	NewData.QuestTitle = QuestMeta.QuestTitle;
+	NewData.QuestDescription = QuestMeta.QuestDescription;
+	NewData.MentionedDescription = QuestMeta.MentionedDescription;
+	NewData.Repeatable = QuestMeta.Repeatable;
+	NewData.State = NewState;
+
+	if (NewState == EQuestState::Mentioned || NewState == EQuestState::Briefed)
+	{
+		NewData.ProgressID = -1;
+	}
+	else
+	{
+		TArray<FQuestStep> Path;
+		if (StepID == 0)
+		{
+			if (QuestMeta.Steps.IsEmpty())
+				return false;
+			Path.Add(QuestMeta.Steps[0]);
+		}
+		else if (!MainQuestComponent->TryBuildPathToStep(QuestMeta, StepID, Path) || Path.IsEmpty())
+		{
+			return false;
+		}
+
+		for (int32 i = 0; i + 1 < Path.Num(); ++i)
+		{
+			FQuestProgressStep CompletedStep(Path[i]);
+			CompletedStep.Completed = true;
+			NewData.PreviousStep.Add(MoveTemp(CompletedStep));
+		}
+
+		NewData.ProgressID = StepID;
+		NewData.CurrentStep = FQuestProgressStep(Path.Last());
+		NewData.CurrentStep.Completed = (NewState == EQuestState::Completed);
+		PopulateBranchAlternatives(NewData, QuestMeta);
+	}
+
+	RemoveQuestData(QuestID, /*bBroadcast=*/false);
+	KnownQuestData.Add(MoveTemp(NewData));
+	RebuildQuestLUT();
+
+	if (bBroadcast)
+	{
+		QuestUpdateDispatcher.Broadcast(QuestID, KnownQuestData[KnownQuestDataLUT[QuestID]].ProgressID, NewState);
+		OnRep_KnownQuest();
+	}
+	return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -757,4 +861,28 @@ void UQuestBearerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(UQuestBearerComponent, KnownQuestData, COND_OwnerOnly);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::PopulateBranchAlternatives(FQuestProgressData& QuestData, const FQuestMetaData& QuestMeta) const
+{
+	QuestData.BranchAlternatives.Empty();
+	if (QuestData.CurrentStep.StepType != EQuestStepType::Branch &&
+		QuestData.CurrentStep.StepType != EQuestStepType::Parallel)
+	{
+		return;
+	}
+
+	for (const int32 BranchID : QuestData.CurrentStep.NextStepIDs)
+	{
+		for (const FQuestStep& BranchStep : QuestMeta.Steps)
+		{
+			if (BranchStep.QuestSubID == BranchID)
+			{
+				QuestData.BranchAlternatives.Add(FQuestProgressStep(BranchStep));
+				break;
+			}
+		}
+	}
 }

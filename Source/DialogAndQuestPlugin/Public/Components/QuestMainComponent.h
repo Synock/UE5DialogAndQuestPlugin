@@ -58,6 +58,15 @@ public:
 	const FQuestMetaData& GetQuestData(int64 QuestID) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	TArray<FQuestMetaData> GetAllQuestData() const;
+
+	bool TryGetQuestStep(const FQuestMetaData& QuestData, int32 StepID, FQuestStep& OutStep) const;
+
+	bool TryBuildPathToStep(const FQuestMetaData& QuestData, int32 TargetStepID, TArray<FQuestStep>& OutPath) const;
+
+	bool IsStepReachable(const FQuestMetaData& QuestData, int32 TargetStepID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 	void ForceAddPlayerQuest(APlayerController* PlayerController, int64 QuestID);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)

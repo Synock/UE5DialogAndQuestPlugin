@@ -167,6 +167,102 @@ const FQuestMetaData& UQuestMainComponent::GetQuestData(int64 QuestID) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
+TArray<FQuestMetaData> UQuestMainComponent::GetAllQuestData() const
+{
+	TArray<FQuestMetaData> Out;
+	QuestList.GenerateValueArray(Out);
+	return Out;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestMainComponent::TryGetQuestStep(const FQuestMetaData& QuestData, int32 StepID, FQuestStep& OutStep) const
+{
+	for (const FQuestStep& Step : QuestData.Steps)
+	{
+		if (Step.QuestSubID == StepID)
+		{
+			OutStep = Step;
+			return true;
+		}
+	}
+	return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestMainComponent::TryBuildPathToStep(const FQuestMetaData& QuestData, int32 TargetStepID,
+                                             TArray<FQuestStep>& OutPath) const
+{
+	OutPath.Reset();
+	if (QuestData.QuestID == 0 || QuestData.Steps.IsEmpty())
+		return false;
+
+	auto FindStepIndex = [&QuestData](int32 StepID) -> int32
+	{
+		for (int32 i = 0; i < QuestData.Steps.Num(); ++i)
+		{
+			if (QuestData.Steps[i].QuestSubID == StepID)
+				return i;
+		}
+		return INDEX_NONE;
+	};
+
+	TSet<int32> Visiting;
+	TArray<FQuestStep> CurrentPath;
+	TFunction<bool(int32)> VisitStep = [&](int32 StepID) -> bool
+	{
+		if (Visiting.Contains(StepID))
+			return false;
+
+		const int32 StepIndex = FindStepIndex(StepID);
+		if (StepIndex == INDEX_NONE)
+			return false;
+
+		Visiting.Add(StepID);
+		const FQuestStep& Step = QuestData.Steps[StepIndex];
+		CurrentPath.Add(Step);
+
+		if (Step.QuestSubID == TargetStepID)
+		{
+			OutPath = CurrentPath;
+			return true;
+		}
+
+		TArray<int32> CandidateNextIDs;
+		if (Step.StepType != EQuestStepType::Linear && !Step.NextStepIDs.IsEmpty())
+		{
+			CandidateNextIDs = Step.NextStepIDs;
+		}
+		else if (!Step.FinishingStep && StepIndex + 1 < QuestData.Steps.Num())
+		{
+			CandidateNextIDs.Add(QuestData.Steps[StepIndex + 1].QuestSubID);
+		}
+
+		for (const int32 NextID : CandidateNextIDs)
+		{
+			if (VisitStep(NextID))
+				return true;
+		}
+
+		CurrentPath.Pop();
+		Visiting.Remove(StepID);
+		return false;
+	};
+
+	return VisitStep(QuestData.Steps[0].QuestSubID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestMainComponent::IsStepReachable(const FQuestMetaData& QuestData, int32 TargetStepID) const
+{
+	TArray<FQuestStep> IgnoredPath;
+	return TryBuildPathToStep(QuestData, TargetStepID, IgnoredPath);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void UQuestMainComponent::ForceAddPlayerQuest(APlayerController* PlayerController, int64 QuestID)
 {
 	if (GetOwnerRole() != ROLE_Authority)
