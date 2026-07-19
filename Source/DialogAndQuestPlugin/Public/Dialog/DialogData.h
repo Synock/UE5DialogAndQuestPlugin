@@ -262,7 +262,7 @@ struct FDialogTopicStruct : public FTableRowBase
 	FDialogTopicCondition TopicCondition;
 
 	/// The NPC's response text when this topic is selected.
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialog", meta = (MultiLine = "true"))
 	FText TopicText;
 
 
