@@ -30,5 +30,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
 	void InitDialog(UObject* InputParentDialog);
 
+#if WITH_AUTOMATION_WORKER
+	UObject* GetParentDialogObjectForTests() const { return ParentDialogObject.Get(); }
+#endif
+
 	UPROPERTY(BlueprintAssignable) FOnCloseTrade OnClose;
 };

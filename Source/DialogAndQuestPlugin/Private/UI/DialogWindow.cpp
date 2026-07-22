@@ -33,31 +33,62 @@ void UDialogWindow::NativeConstruct()
 void UDialogWindow::AddTradeWidget(UDialogTradeWidget* TradeWidget)
 {
 	TradeWidgetPointer = TradeWidget;
-	WidgetSwitcher->AddChild(TradeWidgetPointer);
+	if (TradeWidgetPointer)
+		TradeWidgetPointer->InitDialog(this);
+	if (WidgetSwitcher && TradeWidgetPointer)
+		WidgetSwitcher->AddChild(TradeWidgetPointer);
 }
 
 void UDialogWindow::AddGiveWidget(UDialogGiveWidget* GiveWidget)
 {
 	GiveWidgetPointer = GiveWidget;
-	WidgetSwitcher->AddChild(GiveWidgetPointer);
+	if (GiveWidgetPointer)
+		GiveWidgetPointer->InitDialog(this);
+	if (WidgetSwitcher && GiveWidgetPointer)
+		WidgetSwitcher->AddChild(GiveWidgetPointer);
 }
 
 void UDialogWindow::AddTrainWidget(UDialogTrainWidget* TrainWidget)
 {
 	TrainWidgetPointer = TrainWidget;
-	WidgetSwitcher->AddChild(TrainWidgetPointer);
+	if (TrainWidgetPointer)
+		TrainWidgetPointer->InitDialog(this);
+	if (WidgetSwitcher && TrainWidgetPointer)
+		WidgetSwitcher->AddChild(TrainWidgetPointer);
 }
 
 void UDialogWindow::AddBankWidget(UDialogBankWidget* BankWidget)
 {
 	BankWidgetPointer = BankWidget;
-	WidgetSwitcher->AddChild(BankWidgetPointer);
+	if (BankWidgetPointer)
+		BankWidgetPointer->InitDialog(this);
+	if (WidgetSwitcher && BankWidgetPointer)
+		WidgetSwitcher->AddChild(BankWidgetPointer);
 }
 
 void UDialogWindow::AddRepairWidget(UDialogRepairWidget* RepairWidget)
 {
 	RepairWidgetPointer = RepairWidget;
-	WidgetSwitcher->AddChild(RepairWidgetPointer);
+	if (RepairWidgetPointer)
+		RepairWidgetPointer->InitDialog(this);
+	if (WidgetSwitcher && RepairWidgetPointer)
+		WidgetSwitcher->AddChild(RepairWidgetPointer);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogWindow::InitializeServiceWidgets()
+{
+	if (TradeWidgetPointer)
+		TradeWidgetPointer->InitDialog(this);
+	if (GiveWidgetPointer)
+		GiveWidgetPointer->InitDialog(this);
+	if (TrainWidgetPointer)
+		TrainWidgetPointer->InitDialog(this);
+	if (BankWidgetPointer)
+		BankWidgetPointer->InitDialog(this);
+	if (RepairWidgetPointer)
+		RepairWidgetPointer->InitDialog(this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -86,6 +117,7 @@ void UDialogWindow::InitDialogWindow_Implementation(UDialogComponent* InputDialo
 	Header->InitDialog(this);
 	TopicText->InitDialog(this);
 	TopicList->InitDialog(this);
+	InitializeServiceWidgets();
 	DisplayMainDialogWidget_Implementation();
 
 	if (Header && DialogActorInterface)
@@ -153,6 +185,9 @@ void UDialogWindow::CloseWindow_Implementation()
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
 
 	DisplayMainDialogWidget_Implementation();
+#if WITH_AUTOMATION_WORKER
+	++CloseWindowBroadcastCountForTests;
+#endif
 	OnExit.Broadcast();
 }
 
@@ -235,19 +270,21 @@ void UDialogWindow::DisplayJournalUpdate()
 
 void UDialogWindow::DisplayMainDialogWidget_Implementation()
 {
-	if (TopicText)
+	if (TopicText && WidgetSwitcher)
 		WidgetSwitcher->SetActiveWidget(TopicText);
-	TopicList->SetIsEnabled(true);
+	if (TopicList)
+		TopicList->SetIsEnabled(true);
 }
 
 void UDialogWindow::DisplayTradeWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
 	OnTrade.Broadcast();
-	if (TradeWidgetPointer)
+	if (TradeWidgetPointer && WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidget(TradeWidgetPointer);
-		TopicList->SetIsEnabled(false);
+		if (TopicList)
+			TopicList->SetIsEnabled(false);
 	}
 }
 
@@ -255,10 +292,11 @@ void UDialogWindow::DisplayGiveWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
 	OnGive.Broadcast();
-	if (GiveWidgetPointer)
+	if (GiveWidgetPointer && WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidget(GiveWidgetPointer);
-		TopicList->SetIsEnabled(false);
+		if (TopicList)
+			TopicList->SetIsEnabled(false);
 	}
 }
 
@@ -266,10 +304,11 @@ void UDialogWindow::DisplayTrainDialogWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
 	OnTrain.Broadcast();
-	if (TrainWidgetPointer)
+	if (TrainWidgetPointer && WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidget(TrainWidgetPointer);
-		TopicList->SetIsEnabled(false);
+		if (TopicList)
+			TopicList->SetIsEnabled(false);
 		TrainWidgetPointer->DoOnDisplay();
 	}
 }
@@ -278,10 +317,11 @@ void UDialogWindow::DisplayBankDialogWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
 	OnBank.Broadcast();
-	if (BankWidgetPointer)
+	if (BankWidgetPointer && WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidget(BankWidgetPointer);
-		TopicList->SetIsEnabled(false);
+		if (TopicList)
+			TopicList->SetIsEnabled(false);
 		BankWidgetPointer->DoOnDisplay();
 	}
 }
@@ -290,10 +330,11 @@ void UDialogWindow::DisplayRepairDialogWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
 	OnRepair.Broadcast();
-	if (RepairWidgetPointer)
+	if (RepairWidgetPointer && WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidget(RepairWidgetPointer);
-		TopicList->SetIsEnabled(false);
+		if (TopicList)
+			TopicList->SetIsEnabled(false);
 		RepairWidgetPointer->DoOnDisplay();
 	}
 }

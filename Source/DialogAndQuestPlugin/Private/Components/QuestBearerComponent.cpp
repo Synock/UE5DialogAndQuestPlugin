@@ -202,6 +202,13 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 	if (GetOwnerRole() != ROLE_Authority)
 		return;
 
+	ApplyQuestAcceptance(QuestMeta);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::ApplyQuestAcceptance(const FQuestMetaData& QuestMeta)
+{
 	if (!KnownQuestDataLUT.Contains(QuestMeta.QuestID))
 	{
 		FQuestProgressData NewQuestData;
@@ -221,6 +228,7 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 
 		RebuildQuestLUT();
 		QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID, 0, EQuestState::Accepted);
+		BroadcastQuestAccepted(QuestMeta.QuestID, QuestMeta.QuestTitle);
 	}
 	else
 	{
@@ -245,9 +253,31 @@ void UQuestBearerComponent::AddQuest(const FQuestMetaData& QuestMeta)
 				PopulateBranchAlternatives(Existing, QuestMeta);
 			}
 			QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID, 0, EQuestState::Accepted);
+			BroadcastQuestAccepted(QuestMeta.QuestID, QuestMeta.QuestTitle);
 		}
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UQuestBearerComponent::BroadcastQuestAccepted(int64 QuestID, const FText& QuestTitle)
+{
+#if WITH_AUTOMATION_TESTS
+	++TestQuestAcceptedBroadcastCount;
+#endif
+	QuestAcceptedDispatcher.Broadcast(QuestID, QuestTitle);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#if WITH_AUTOMATION_TESTS
+bool UQuestBearerComponent::Test_SetQuestDataFromMeta(const FQuestMetaData& QuestMeta, int32 StepID,
+	EQuestState NewState, bool bBroadcast)
+{
+	UQuestMainComponent* PathHelper = NewObject<UQuestMainComponent>(GetTransientPackage());
+	return ApplyQuestDataFromMeta(QuestMeta, PathHelper, StepID, NewState, bBroadcast);
+}
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -368,6 +398,17 @@ bool UQuestBearerComponent::AuthoritySetQuestData(int64 QuestID, int32 StepID, E
 	if (QuestMeta.QuestID == 0)
 		return false;
 
+	return ApplyQuestDataFromMeta(QuestMeta, MainQuestComponent, StepID, NewState, bBroadcast);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool UQuestBearerComponent::ApplyQuestDataFromMeta(const FQuestMetaData& QuestMeta,
+	UQuestMainComponent* MainQuestComponent, int32 StepID, EQuestState NewState, bool bBroadcast)
+{
+	if (QuestMeta.QuestID <= 0 || !MainQuestComponent || NewState == EQuestState::Unknown)
+		return false;
+
 	FQuestProgressData NewData;
 	NewData.QuestID = QuestMeta.QuestID;
 	NewData.QuestTitle = QuestMeta.QuestTitle;
@@ -407,13 +448,18 @@ bool UQuestBearerComponent::AuthoritySetQuestData(int64 QuestID, int32 StepID, E
 		PopulateBranchAlternatives(NewData, QuestMeta);
 	}
 
-	RemoveQuestData(QuestID, /*bBroadcast=*/false);
+	KnownQuestData.RemoveAll([QuestID = QuestMeta.QuestID](const FQuestProgressData& Data)
+	{
+		return Data.QuestID == QuestID;
+	});
 	KnownQuestData.Add(MoveTemp(NewData));
 	RebuildQuestLUT();
 
 	if (bBroadcast)
 	{
-		QuestUpdateDispatcher.Broadcast(QuestID, KnownQuestData[KnownQuestDataLUT[QuestID]].ProgressID, NewState);
+		QuestUpdateDispatcher.Broadcast(QuestMeta.QuestID,
+		                                 KnownQuestData[KnownQuestDataLUT[QuestMeta.QuestID]].ProgressID,
+		                                 NewState);
 		OnRep_KnownQuest();
 	}
 	return true;

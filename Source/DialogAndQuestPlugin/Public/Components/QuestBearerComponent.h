@@ -8,6 +8,9 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FKnownQuestChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FQuestUpdated, int64, QuestID, int32, QuestStepID, EQuestState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FQuestAccepted, int64, QuestID, FText, QuestTitle);
+
+class UQuestMainComponent;
 
 /**
  * Per-player quest state component. Lives on the PlayerController (or any actor
@@ -25,6 +28,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FQuestUpdated, int64, QuestID, in
  * - NewQuestDispatcher: Fires when a previously unknown quest appears in the list.
  * - QuestUpdateDispatcher (FQuestUpdated): Fires on every state/step transition with
  *   (QuestID, StepID, NewState). The game hooks this to persist quest progress to the backend.
+ * - QuestAcceptedDispatcher (FQuestAccepted): Authority-only semantic event fired when a quest
+ *   enters Accepted. Games can use this for presentation without mistaking normal step updates
+ *   for a newly started quest.
  *
  * ## Dialog Integration
  * The dialog system calls CanDisplay() and GetQuestState() (via IQuestBearerInterface)
@@ -109,6 +115,14 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FQuestUpdated QuestUpdateDispatcher;
 
+	/**
+	 * Authority-only event fired exactly when a quest enters Accepted: first acceptance,
+	 * Mentioned/Briefed acceptance, or repeatable reacquisition after completion.
+	 * It does not fire for ordinary Accepted-state step progression or idempotent re-adds.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "Quest|Events")
+	FQuestAccepted QuestAcceptedDispatcher;
+
 	//------------------------------------------------------------------------------------------------------------------
 	// State machine transitions
 	//------------------------------------------------------------------------------------------------------------------
@@ -190,10 +204,31 @@ public:
 	{
 		ApplyQuestProgress(QuestMeta, NextQuestStep, SkipReward, bSilent);
 	}
+
+	void Test_AddQuest(const FQuestMetaData& QuestMeta)
+	{
+		ApplyQuestAcceptance(QuestMeta);
+	}
+
+	int32 Test_GetQuestAcceptedBroadcastCount() const
+	{
+		return TestQuestAcceptedBroadcastCount;
+	}
+
+	bool Test_SetQuestDataFromMeta(const FQuestMetaData& QuestMeta, int32 StepID, EQuestState NewState,
+	                               bool bBroadcast = false);
 #endif
 
 private:
 	void ApplyQuestProgress(const FQuestMetaData& QuestMeta, const FQuestStep& NextQuestStep,
 	                        bool SkipReward, bool bSilent);
+	void ApplyQuestAcceptance(const FQuestMetaData& QuestMeta);
+	bool ApplyQuestDataFromMeta(const FQuestMetaData& QuestMeta, UQuestMainComponent* MainQuestComponent,
+	                            int32 StepID, EQuestState NewState, bool bBroadcast);
+	void BroadcastQuestAccepted(int64 QuestID, const FText& QuestTitle);
 	void PopulateBranchAlternatives(FQuestProgressData& QuestData, const FQuestMetaData& QuestMeta) const;
+
+#if WITH_AUTOMATION_TESTS
+	int32 TestQuestAcceptedBroadcastCount = 0;
+#endif
 };

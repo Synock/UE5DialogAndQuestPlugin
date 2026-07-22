@@ -47,6 +47,10 @@ protected:
 
 	int32 GreetingVoiceoverRequestSerial = 0;
 
+#if WITH_AUTOMATION_WORKER
+	int32 CloseWindowBroadcastCountForTests = 0;
+#endif
+
 	// Widget bindings ------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Dialog|Widgets")
 	TObjectPtr<class UDialogFooterWidget> Footer = nullptr;
@@ -88,6 +92,7 @@ protected:
 	void StopVoiceoverForServiceTab();
 	void RequestGreetingVoiceover(const TSoftObjectPtr<USoundBase>& GreetingVoiceover);
 	bool ShouldPlayPendingGreetingVoiceover(int32 RequestSerial) const;
+	void InitializeServiceWidgets();
 
 public:
 	// IDialogWindowInterface — data accessors ------------------------------------
@@ -158,4 +163,8 @@ public:
 	// Journal update helper (called by dialog systems after quest-state changes).
 	UFUNCTION(BlueprintCallable)
 	void DisplayJournalUpdate();
+
+#if WITH_AUTOMATION_WORKER
+	int32 GetCloseWindowBroadcastCountForTests() const { return CloseWindowBroadcastCountForTests; }
+#endif
 };
