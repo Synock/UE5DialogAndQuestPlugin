@@ -7,6 +7,8 @@
 #include "Quest/QuestAsset.h"   // replaces direct QuestData.h — covers all quest types + UQuestAsset
 #include "DialogData.generated.h"
 
+class UDialogConsequenceAction;
+
 /**
  * DialogData.h — Dialog topic definitions and quest-driven topic filtering.
  *
@@ -68,6 +70,7 @@
  *   - Both at once: bAdvanceStep = true + NewQuestState = Achieved
  *   - Mention a new quest (MentionQuestID → sets quest to Mentioned state)
  *   - Adjust faction relation (FactionDelta)
+ *   - Execute a typed dialog consequence action asset (Action)
  *
  * Step advancement (bAdvanceStep) uses the dialog NPC as the quest validator — the NPC's
  * QuestGiverComponent must have the relevant step registered via AddValidatableSteps().
@@ -235,9 +238,13 @@ struct FDialogConsequence : public FTableRowBase
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Inventory")
 	TArray<int32> ItemsToGrant;
 
+	/** Optional typed action asset executed server-side after topic validation. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Consequence|Action")
+	TObjectPtr<UDialogConsequenceAction> Action = nullptr;
+
 	bool HasConsequence() const
 	{
-		return GetQuestID() != 0 || FactionDelta != 0.f || GetMentionQuestID() != 0 || !ItemsToGrant.IsEmpty();
+		return GetQuestID() != 0 || FactionDelta != 0.f || GetMentionQuestID() != 0 || !ItemsToGrant.IsEmpty() || Action != nullptr;
 	}
 };
 
