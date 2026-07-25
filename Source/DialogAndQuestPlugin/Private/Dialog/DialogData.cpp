@@ -85,7 +85,7 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 			return !QuestBearer->IsQuestKnown(GetQuestID()) && bRelationOK;
 
 		const bool bHasStateFilter = RequiredQuestState != EQuestState::Unknown;
-		const bool bHasStepFilter  = MinimumStepID != 0;
+		const bool bHasStepFilter = bUseStepFilter || MinimumStepID != 0;
 
 		// If the quest is not known at all:
 		// - A state filter can only pass for Unknown (which means "no filter")

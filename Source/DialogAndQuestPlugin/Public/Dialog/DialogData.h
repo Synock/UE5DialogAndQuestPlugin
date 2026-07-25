@@ -35,15 +35,16 @@ class UDialogConsequenceAction;
  * |---------------------|---------------------------------------------------------------|
  * | QuestId             | Quest to check. 0 = no quest filter.                          |
  * | RequiredQuestState  | Show only when quest is in this state. Unknown = no filter.   |
- * | MinimumStepID       | Step-based filter. 0 = no step filter.                        |
+ * | bUseStepFilter      | Enables step-based filtering, including exact step 0.          |
+ * | MinimumStepID       | Step-based filter. 0 = no step filter unless bUseStepFilter.   |
  * | StepCondition       | Comparison operator for step check (Equal, Greater, etc.).    |
  * | MinimumRelation     | Minimum NPC→player relation to show topic.                    |
  * | RequiredItems       | Items the player must carry.                                  |
  * | SkillCheckTag       | GameplayTag for a skill check (via IDialogSkillCheckInterface)|
  * | bConsumeOnUse       | If true, topic disappears after first click.                  |
  *
- * State and step filters can be combined: if both RequiredQuestState and MinimumStepID are
- * set, the topic only appears when BOTH conditions are satisfied.
+ * State and step filters can be combined: if RequiredQuestState is set and either
+ * bUseStepFilter or MinimumStepID is set, the topic only appears when BOTH conditions are satisfied.
  *
  * ### Example: Multi-Step Quest Dialog
  *
@@ -98,6 +99,11 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	/// Minimum step ID for step-based condition (legacy). Used with StepCondition.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
 	int32 MinimumStepID = 0;
+
+	/// Enables step-based filtering even when MinimumStepID is 0.
+	/// Existing assets with MinimumStepID > 0 still filter without this flag.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
+	bool bUseStepFilter = false;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
 	EQuestStepConditionType StepCondition = EQuestStepConditionType::Equal;

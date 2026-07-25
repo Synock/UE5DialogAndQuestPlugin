@@ -115,6 +115,7 @@ void FDialogAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Det
 		// Condition side: topic has a quest state or step filter but no Quest asset.
 		const bool bHasConditionQuestData =
 			Topic.TopicCondition.RequiredQuestState != EQuestState::Unknown ||
+			Topic.TopicCondition.bUseStepFilter ||
 			Topic.TopicCondition.MinimumStepID != 0;
 		const bool bConditionDeprecated = bHasConditionQuestData && !Topic.TopicCondition.Quest;
 
@@ -132,6 +133,20 @@ void FDialogAssetDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& Det
 		Warnings.Add(FString::Printf(
 			TEXT("%d topic(s) still use deprecated numeric Quest IDs. Open each Topic and assign the Quest asset pointer."),
 			DeprecatedQuestIDCount));
+
+	int32 UngatedAdvanceCount = 0;
+	for (const FDialogTopicStruct& Topic : Asset->Topics)
+	{
+		const bool bHasExplicitStepFilter = Topic.TopicCondition.bUseStepFilter ||
+			Topic.TopicCondition.MinimumStepID != 0;
+		if (Topic.Consequence.bAdvanceStep && Topic.Consequence.Quest && !bHasExplicitStepFilter)
+			++UngatedAdvanceCount;
+	}
+
+	if (UngatedAdvanceCount > 0)
+		Warnings.Add(FString::Printf(
+			TEXT("%d advancing topic(s) have no explicit step filter. They can advance whichever quest step is current."),
+			UngatedAdvanceCount));
 
 	if (Warnings.IsEmpty())
 		return;
