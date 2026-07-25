@@ -263,13 +263,16 @@ void UDialogWindow::DisplayPlainString_Implementation(const FString& PlainString
 void UDialogWindow::DisplayJournalUpdate()
 {
 	RefreshDialogOptions_Implementation();
-	TopicText->AddEmptyTopicData(TEXT("<Italic>Your quest journal has been updated.</>"));
+	TopicText->AddEmptyTopicData(TEXT("<Important>Your quest journal has been updated.</>"));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 void UDialogWindow::DisplayMainDialogWidget_Implementation()
 {
+#if WITH_AUTOMATION_WORKER
+	++MainDialogDisplayCountForTests;
+#endif
 	if (TopicText && WidgetSwitcher)
 		WidgetSwitcher->SetActiveWidget(TopicText);
 	if (TopicList)

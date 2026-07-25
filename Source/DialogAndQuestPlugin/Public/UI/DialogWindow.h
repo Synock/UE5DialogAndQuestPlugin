@@ -49,6 +49,7 @@ protected:
 
 #if WITH_AUTOMATION_WORKER
 	int32 CloseWindowBroadcastCountForTests = 0;
+	int32 MainDialogDisplayCountForTests = 0;
 #endif
 
 	// Widget bindings ------------------------------------------------------------
@@ -138,6 +139,9 @@ public:
 	UDialogTradeWidget*  GetTradeWidget()  const { return TradeWidgetPointer;  }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	UDialogTrainWidget*  GetTrainWidget()  const { return TrainWidgetPointer;  }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
 	UDialogRepairWidget* GetRepairWidget() const { return RepairWidgetPointer; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
@@ -166,5 +170,6 @@ public:
 
 #if WITH_AUTOMATION_WORKER
 	int32 GetCloseWindowBroadcastCountForTests() const { return CloseWindowBroadcastCountForTests; }
+	int32 GetMainDialogDisplayCountForTests() const { return MainDialogDisplayCountForTests; }
 #endif
 };
