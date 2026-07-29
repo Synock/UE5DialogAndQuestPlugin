@@ -156,7 +156,8 @@ struct FQuestStep : public FTableRowBase
 		meta = (MustImplement = "/Script/DialogAndQuestPlugin.QuestGiverInterface"))
 	TSubclassOf<UObject> ValidatorClass;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest")
+	/** Text shown when this step's items are turned in. Supports authored line breaks. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest", meta = (MultiLine = "true"))
 	FText ItemTurnInDialog;
 
 	/// Step type for branching/parallel support. Linear = next step in array order.

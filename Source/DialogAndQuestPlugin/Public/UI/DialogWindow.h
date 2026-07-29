@@ -47,7 +47,7 @@ protected:
 
 	int32 GreetingVoiceoverRequestSerial = 0;
 
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	int32 CloseWindowBroadcastCountForTests = 0;
 	int32 MainDialogDisplayCountForTests = 0;
 #endif
@@ -168,7 +168,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DisplayJournalUpdate();
 
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	int32 GetCloseWindowBroadcastCountForTests() const { return CloseWindowBroadcastCountForTests; }
 	int32 GetMainDialogDisplayCountForTests() const { return MainDialogDisplayCountForTests; }
 #endif

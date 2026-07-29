@@ -30,7 +30,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
 	void InitDialog(UObject* InputParentDialog);
 
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	UObject* GetParentDialogObjectForTests() const { return ParentDialogObject.Get(); }
 #endif
 

@@ -385,11 +385,6 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		const FText ProgressDialog = bCurrentIsMultiPath
 			? NextStep.ItemTurnInDialog
 			: QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.ItemTurnInDialog;
-		if (!ProgressDialog.IsEmpty())
-		{
-			if (IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer))
-				DialogInterface->ForceDisplayTextInDialog(ProgressDialog.ToString());
-		}
 
 		// NextStep may be the sentinel when CurrentStepID is the FinishingStep.
 		// ProgressQuest handles this correctly by checking PreviousStep.Last().FinishingStep.
@@ -407,6 +402,15 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 			// (see the FinishingStep guard in FindNextStep above).
 			const FQuestStep& FinishSentinel = FindNextStep(CurrentQuest, NextStep.QuestSubID, QuestGiverInterface);
 			QuestBearerInterface->ProgressQuest(CurrentQuest, FinishSentinel);
+		}
+
+		// Progress the quest before asking the client to render the result. The dialog
+		// window parses topic hyperlinks against quest state, so this makes topics unlocked
+		// by this turn-in eligible in the displayed response itself.
+		if (!ProgressDialog.IsEmpty())
+		{
+			if (IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer))
+				DialogInterface->ForceDisplayTextInDialog(ProgressDialog.ToString());
 		}
 
 		return true;

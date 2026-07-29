@@ -3,7 +3,7 @@
 #include "Misc/AutomationTest.h"
 #include "Quest/QuestAsset.h"
 
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FConditionalGreetingSelectionTest,
 	"DialogAndQuest.ConditionalGreeting.Selection",

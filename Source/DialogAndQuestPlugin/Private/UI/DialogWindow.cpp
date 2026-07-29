@@ -185,7 +185,7 @@ void UDialogWindow::CloseWindow_Implementation()
 		BearerInterface->GetQuestBearerComponent()->KnownQuestDispatcher.RemoveAll(this);
 
 	DisplayMainDialogWidget_Implementation();
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	++CloseWindowBroadcastCountForTests;
 #endif
 	OnExit.Broadcast();
@@ -270,7 +270,7 @@ void UDialogWindow::DisplayJournalUpdate()
 
 void UDialogWindow::DisplayMainDialogWidget_Implementation()
 {
-#if WITH_AUTOMATION_WORKER
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	++MainDialogDisplayCountForTests;
 #endif
 	if (TopicText && WidgetSwitcher)
