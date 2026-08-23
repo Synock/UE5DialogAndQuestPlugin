@@ -22,7 +22,12 @@ void UDialogTextChunkWidget::InitData_Implementation(const FDialogTextData& Item
 		TextBlock->SetText(FText::FromString(ItemData.TopicText));
 
 	if (TitleBlock)
-		TitleBlock->SetText(FText::FromString(ItemData.TopicName));
+	{
+		FString TopicTitle = ItemData.TopicName;
+		if (!TopicTitle.IsEmpty())
+			TopicTitle[0] = FChar::ToUpper(TopicTitle[0]);
+		TitleBlock->SetText(FText::FromString(TopicTitle));
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
