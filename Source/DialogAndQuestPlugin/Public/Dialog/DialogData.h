@@ -191,8 +191,11 @@ struct DIALOGANDQUESTPLUGIN_API FConditionalGreeting
 	TSoftObjectPtr<USoundBase> GetVoiceover() const;
 };
 
-/** Returns the first matching greeting in authoring order, or nullptr when no rule matches. */
-DIALOGANDQUESTPLUGIN_API const FConditionalGreeting* FindFirstMatchingConditionalGreeting(
+/**
+ * Returns the best matching greeting, or nullptr when no rule matches. Explicit quest-step
+ * filters take precedence over broad rules; higher steps win, with authored order breaking ties.
+ */
+DIALOGANDQUESTPLUGIN_API const FConditionalGreeting* FindBestMatchingConditionalGreeting(
 	const TArray<FConditionalGreeting>& Greetings, const AActor* DialogActor, const APlayerController* Controller);
 
 ///@brief Consequence triggered when the player clicks a dialog topic.

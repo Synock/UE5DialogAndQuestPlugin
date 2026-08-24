@@ -154,7 +154,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TSoftObjectPtr<USoundBase> GetBadGreetingVoiceover() const { return BadGreetingVoiceover; }
 
-	/** Returns the first matching conditional greeting, if any. */
+	/** Returns the highest-precedence matching conditional greeting, if any. */
 	bool FindConditionalGreeting(const AActor* DialogActor, const APlayerController* Controller,
 		FText& OutText, TSoftObjectPtr<USoundBase>& OutVoiceover) const;
 

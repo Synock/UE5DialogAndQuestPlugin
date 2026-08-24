@@ -378,7 +378,7 @@ void UDialogComponent::OnRep_ConditionalGreetings()
 bool UDialogComponent::FindConditionalGreeting(const AActor* DialogActor, const APlayerController* Controller,
 	FText& OutText, TSoftObjectPtr<USoundBase>& OutVoiceover) const
 {
-	if (const FConditionalGreeting* Greeting = FindFirstMatchingConditionalGreeting(ConditionalGreetings, DialogActor, Controller))
+	if (const FConditionalGreeting* Greeting = FindBestMatchingConditionalGreeting(ConditionalGreetings, DialogActor, Controller))
 	{
 		OutText = Greeting->Text;
 		OutVoiceover = Greeting->GetVoiceover();

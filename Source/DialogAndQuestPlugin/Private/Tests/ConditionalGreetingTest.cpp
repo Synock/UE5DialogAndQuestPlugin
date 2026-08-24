@@ -22,10 +22,10 @@ bool FConditionalGreetingSelectionTest::RunTest(const FString& Parameters)
 	SecondGreeting.Text = FText::FromString(TEXT("Second greeting"));
 
 	const TArray<FConditionalGreeting> Greetings = { FirstGreeting, SecondGreeting };
-	const FConditionalGreeting* Selected = FindFirstMatchingConditionalGreeting(Greetings, nullptr, Controller);
+	const FConditionalGreeting* Selected = FindBestMatchingConditionalGreeting(Greetings, nullptr, Controller);
 	TestNotNull(TEXT("A generic greeting matches without an NPC relation"), Selected);
 	if (Selected)
-		TestEqual(TEXT("First matching authored rule wins"), Selected->Id, FirstGreeting.Id);
+		TestEqual(TEXT("Authored order breaks equal-precedence rule ties"), Selected->Id, FirstGreeting.Id);
 
 	FConditionalGreeting QuestGreeting;
 	QuestGreeting.Id = TEXT("requires_quest_interface");

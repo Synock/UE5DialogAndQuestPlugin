@@ -40,6 +40,14 @@ EDataValidationResult UDialogAsset::IsDataValid(FDataValidationContext& Context)
 				TEXT("Conditional greeting '%s' requires a Quest when 'Require Quest Not Known' is enabled."), *Greeting.Id.ToString())));
 			Result = EDataValidationResult::Invalid;
 		}
+
+		if (Greeting.Condition.GetQuestID() != 0 && Greeting.Condition.MinimumStepID == 0 &&
+			!Greeting.Condition.bUseStepFilter)
+		{
+			Context.AddWarning(FText::FromString(FString::Printf(
+				TEXT("Conditional greeting '%s' does not filter quest step 0; it matches any known state of its quest. "
+					 "Enable 'Use Step Filter' to require exact step 0."), *Greeting.Id.ToString())));
+		}
 	}
 
 	TSet<const UDialogAsset*> Visited;

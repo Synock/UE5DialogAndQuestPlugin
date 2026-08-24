@@ -127,14 +127,27 @@ TSoftObjectPtr<USoundBase> FConditionalGreeting::GetVoiceover() const
 		: Voiceover;
 }
 
-const FConditionalGreeting* FindFirstMatchingConditionalGreeting(
+const FConditionalGreeting* FindBestMatchingConditionalGreeting(
 	const TArray<FConditionalGreeting>& Greetings, const AActor* DialogActor, const APlayerController* Controller)
 {
+	const FConditionalGreeting* BestGreeting = nullptr;
+	int32 BestStep = TNumericLimits<int32>::Lowest();
+
 	for (const FConditionalGreeting& Greeting : Greetings)
 	{
-		if (Greeting.Matches(DialogActor, Controller))
-			return &Greeting;
+		if (!Greeting.Matches(DialogActor, Controller))
+			continue;
+
+		const bool bHasStepFilter = Greeting.Condition.bUseStepFilter || Greeting.Condition.MinimumStepID != 0;
+		const int32 StepPrecedence = bHasStepFilter
+			? Greeting.Condition.MinimumStepID
+			: TNumericLimits<int32>::Lowest();
+		if (!BestGreeting || StepPrecedence > BestStep)
+		{
+			BestGreeting = &Greeting;
+			BestStep = StepPrecedence;
+		}
 	}
 
-	return nullptr;
+	return BestGreeting;
 }
