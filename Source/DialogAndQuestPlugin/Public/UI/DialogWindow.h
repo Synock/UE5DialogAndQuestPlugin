@@ -144,6 +144,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
 	UDialogRepairWidget* GetRepairWidget() const { return RepairWidgetPointer; }
 
+	/** True only while the Give panel is the switcher's active service tab. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
+	bool IsDisplayingGiveWidget() const;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog")
 	UDialogHeaderWidget* GetHeader()    const { return Header;    }
 

@@ -303,6 +303,11 @@ void UDialogWindow::DisplayGiveWidget_Implementation()
 	}
 }
 
+bool UDialogWindow::IsDisplayingGiveWidget() const
+{
+	return GiveWidgetPointer && WidgetSwitcher && WidgetSwitcher->GetActiveWidget() == GiveWidgetPointer;
+}
+
 void UDialogWindow::DisplayTrainDialogWidget_Implementation()
 {
 	StopVoiceoverForServiceTab();
