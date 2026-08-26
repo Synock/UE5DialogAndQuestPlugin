@@ -69,6 +69,21 @@ enum struct EQuestStepConditionType: uint8
 	GreaterEqual
 };
 
+/** Numeric step-ID comparison shared by authored dialog filters and validator registration. */
+inline bool MatchesQuestStepCondition(const int32 CandidateStepID, const int32 ReferenceStepID,
+	const EQuestStepConditionType Condition)
+{
+	switch (Condition)
+	{
+	default:
+	case EQuestStepConditionType::Equal:        return CandidateStepID == ReferenceStepID;
+	case EQuestStepConditionType::Lesser:       return CandidateStepID < ReferenceStepID;
+	case EQuestStepConditionType::LesserEqual:  return CandidateStepID <= ReferenceStepID;
+	case EQuestStepConditionType::Greater:      return CandidateStepID > ReferenceStepID;
+	case EQuestStepConditionType::GreaterEqual: return CandidateStepID >= ReferenceStepID;
+	}
+}
+
 ///@brief Quest state machine following a Mentioned→Briefed→Accepted→Achieved→Completed flow with a Botched dead-end.
 UENUM(BlueprintType)
 enum class EQuestState : uint8
@@ -147,9 +162,11 @@ struct FQuestStep : public FTableRowBase
 	float NecessaryCoins = 0.f;
 
 	/**
-	 * Optional validator class filter for item turn-in steps.
-	 * When set, only an NPC whose class IsChildOf this class will register this step during InitQuest().
-	 * Leave empty to allow any NPC that lists this quest in HandledQuests (default, backward-compatible).
+	 * Optional validator class filter for item turn-in steps and completion owner for Optional steps.
+	 * For item turn-ins, only an NPC whose class IsChildOf this class registers the step during InitQuest().
+	 * For an Optional step, this class completes the objective and earns its reward; a validator for the
+	 * successor may instead bypass the objective without granting that reward. Leave empty to allow any
+	 * validator registered for the current step (default, backward-compatible).
 	 * Must implement IQuestGiverInterface.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Quest|Requirements",

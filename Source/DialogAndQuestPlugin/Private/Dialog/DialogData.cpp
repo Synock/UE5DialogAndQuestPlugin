@@ -93,18 +93,34 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 		if (!QuestBearer->IsQuestKnown(GetQuestID()))
 			return false;
 
+		const FQuestProgressData& Progress = QuestBearer->GetKnownQuest(GetQuestID());
+		const bool bUsesHistoricalSuccessfulProgress =
+			RequiredQuestState == EQuestState::Accepted &&
+			bHasStepFilter &&
+			(StepCondition == EQuestStepConditionType::Greater ||
+			 StepCondition == EQuestStepConditionType::GreaterEqual);
+
 		// State-based check
 		if (bHasStateFilter)
 		{
-			const FQuestProgressData& Progress = QuestBearer->GetKnownQuest(GetQuestID());
-			if (Progress.State != RequiredQuestState)
+			const bool bAllowsHistoricalSuccessfulProgress =
+				bUsesHistoricalSuccessfulProgress &&
+				(Progress.State == EQuestState::Achieved || Progress.State == EQuestState::Completed);
+
+			if (Progress.State != RequiredQuestState && !bAllowsHistoricalSuccessfulProgress)
 				return false;
 		}
 
 		// Step-based check (combined with state when both are set)
 		if (bHasStepFilter)
 		{
-			if (!QuestBearer->CanDisplay(GetQuestID(), MinimumStepID, StepCondition))
+			// Completion advances CurrentStep to the sentinel step (ID 0), so its numeric ID no
+			// longer represents the completed path. Successful completion is inherently past a
+			// historical Greater/GreaterEqual gate; Achieved quests still compare their live step.
+			const bool bCompletedHistoricalProgress =
+				bUsesHistoricalSuccessfulProgress && Progress.State == EQuestState::Completed;
+			if (!bCompletedHistoricalProgress &&
+				!QuestBearer->CanDisplay(GetQuestID(), MinimumStepID, StepCondition))
 				return false;
 		}
 

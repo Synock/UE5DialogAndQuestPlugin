@@ -38,9 +38,10 @@ protected:
 public:
 
 	/// Returns the step to advance to after CurrentStep.
-	/// When CurrentStep is a Branch and Validator is provided, picks the branch whose ID the
+	/// When CurrentStep is a Branch/Parallel node and Validator is provided, picks the path whose ID the
 	/// validator's QuestGiverComponent has registered, enabling NPC-specific path selection.
-	/// Without a Validator (or when no registered branch matches), falls back to NextStepIDs[0].
+	/// Optional steps have one ordered successor and navigate like Linear steps.
+	/// Without a Validator, a multi-path node falls back to NextStepIDs[0].
 	/// Returns GQuestStepSentinel (QuestID==0, QuestSubID==0) when there is no next step.
 	const FQuestStep& FindNextStep(const FQuestMetaData& QuestData, int32 CurrentStep,
 	                               const IQuestGiverInterface* Validator = nullptr);

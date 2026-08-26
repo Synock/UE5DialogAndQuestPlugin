@@ -28,9 +28,11 @@ void UQuestMainComponent::BeginPlay()
 //----------------------------------------------------------------------------------------------------------------------
 
 // FindNextStep — single source of truth for step navigation.
-// When CurrentStep is a Branch step and Validator is provided, the branch whose ID is
+// When CurrentStep is a Branch/Parallel step and Validator is provided, the path whose ID is
 // registered on the validator's QuestGiverComponent is selected.  This lets each NPC
 // steer the player down its own story path without the system hard-wiring NextStepIDs[0].
+// Optional steps deliberately follow their single ordered successor like Linear steps;
+// TryProgressQuest decides whether the validator completed or bypassed the optional objective.
 // Without a validator (restore walk, journal preview) the first branch is the fallback.
 // Returns GQuestStepSentinel (QuestID==0, QuestSubID==0) when there is no successor.
 // Callers must check IsStepSentinel() before passing the result to ProgressQuest().
@@ -47,8 +49,9 @@ const FQuestStep& UQuestMainComponent::FindNextStep(const FQuestMetaData& QuestD
 		if (Step.QuestSubID != CurrentStep)
 			continue;
 
-		// Non-linear step: use NextStepIDs to resolve the destination.
-		if (Step.StepType != EQuestStepType::Linear && !Step.NextStepIDs.IsEmpty())
+		// Multi-path step: use NextStepIDs to resolve the destination.
+		if ((Step.StepType == EQuestStepType::Branch || Step.StepType == EQuestStepType::Parallel) &&
+			!Step.NextStepIDs.IsEmpty())
 		{
 			// Branch: when a validator is provided, pick the first branch ID that the
 			// validator's QuestGiverComponent has registered.  Return sentinel if the
@@ -230,7 +233,8 @@ bool UQuestMainComponent::TryBuildPathToStep(const FQuestMetaData& QuestData, in
 		}
 
 		TArray<int32> CandidateNextIDs;
-		if (Step.StepType != EQuestStepType::Linear && !Step.NextStepIDs.IsEmpty())
+		if ((Step.StepType == EQuestStepType::Branch || Step.StepType == EQuestStepType::Parallel) &&
+			!Step.NextStepIDs.IsEmpty())
 		{
 			CandidateNextIDs = Step.NextStepIDs;
 		}
@@ -325,6 +329,9 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 	// there is no successor (finishing step, malformed data, or NPC owns no branch dest).
 	const FQuestStep& NextStep = FindNextStep(CurrentQuest, CurrentStepID, QuestGiverInterface);
 	const int32 NextQuestStepID = NextStep.QuestSubID;
+	const FQuestProgressData* CurrentQuestProgress = CurrentStepID != -1
+		? &QuestBearerInterface->GetKnownQuest(QuestID)
+		: nullptr;
 
 	// Determine which step ID to present to the QuestGiverComponent's validatable list:
 	//
@@ -338,10 +345,11 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 	// Determine whether the player is currently sitting at a multi-path dispatch node
 	// (Branch or Parallel).  This flag drives: destination-step ValidatorID selection,
 	// sentinel rejection, ItemTurnInDialog source, and the finishing-step auto-advance.
-	const bool bCurrentIsMultiPath = (CurrentStepID != -1) &&
-		QuestBearerInterface->IsQuestKnown(QuestID) &&
-		(QuestBearerInterface->GetKnownQuest(QuestID).CurrentStep.StepType == EQuestStepType::Branch ||
-		 QuestBearerInterface->GetKnownQuest(QuestID).CurrentStep.StepType == EQuestStepType::Parallel);
+	const bool bCurrentIsMultiPath = CurrentQuestProgress &&
+		(CurrentQuestProgress->CurrentStep.StepType == EQuestStepType::Branch ||
+		 CurrentQuestProgress->CurrentStep.StepType == EQuestStepType::Parallel);
+	const bool bCurrentIsOptional = CurrentQuestProgress &&
+		CurrentQuestProgress->CurrentStep.StepType == EQuestStepType::Optional;
 
 	if (bCurrentIsMultiPath && IsStepSentinel(NextStep))
 	{
@@ -351,14 +359,49 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		return false;
 	}
 
-	const int32 ValidatorStepID = (CurrentStepID == -1) ? NextQuestStepID
-	                            : bCurrentIsMultiPath    ? NextQuestStepID   // destination the NPC owns
-	                            :                          CurrentStepID;     // step being completed
+	const UQuestGiverComponent* QuestGiverComponent = QuestGiverInterface->GetQuestGiverComponent();
+	int32 ValidatorStepID = (CurrentStepID == -1) ? NextQuestStepID
+	                      : bCurrentIsMultiPath    ? NextQuestStepID   // destination the NPC owns
+	                      :                          CurrentStepID;     // step being completed
+	bool bSkipOptionalReward = false;
 
-	const bool bCanValidate = QuestGiverInterface->GetQuestGiverComponent()->CanValidateQuestStep(QuestID, ValidatorStepID);
+	if (bCurrentIsOptional)
+	{
+		if (IsStepSentinel(NextStep))
+		{
+			UDialogAndQuestPluginHelper::Warning(FString::Printf(
+				TEXT("TryProgressQuest: QID=%lld Optional step %d has no successor"), QuestID, CurrentStepID));
+			return false;
+		}
+
+		const FQuestProgressStep& OptionalStep = CurrentQuestProgress->CurrentStep;
+		const bool bValidatorCompletesOptional = !OptionalStep.ValidatorClass ||
+			Validator->GetClass()->IsChildOf(OptionalStep.ValidatorClass);
+		const bool bCanValidateCurrent = QuestGiverComponent->CanValidateQuestStep(QuestID, CurrentStepID);
+		const bool bCanValidateSuccessor = QuestGiverComponent->CanValidateQuestStep(QuestID, NextQuestStepID);
+
+		if (bValidatorCompletesOptional && bCanValidateCurrent)
+		{
+			ValidatorStepID = CurrentStepID;
+		}
+		else if (bCanValidateSuccessor)
+		{
+			ValidatorStepID = NextQuestStepID;
+			bSkipOptionalReward = true;
+		}
+		else
+		{
+			UDialogAndQuestPluginHelper::Warning(FString::Printf(
+				TEXT("TryProgressQuest: QID=%lld Optional step %d cannot be completed or bypassed by '%s'"),
+				QuestID, CurrentStepID, *GetNameSafe(Validator)));
+			return false;
+		}
+	}
+
+	const bool bCanValidate = QuestGiverComponent->CanValidateQuestStep(QuestID, ValidatorStepID);
 	UDialogAndQuestPluginHelper::Log(FString::Printf(
-		TEXT("TryProgressQuest QID=%lld CurrentStep=%d NextStep=%d ValidatorStep=%d CanValidate=%d"),
-		QuestID, CurrentStepID, NextQuestStepID, ValidatorStepID, bCanValidate));
+		TEXT("TryProgressQuest QID=%lld CurrentStep=%d NextStep=%d ValidatorStep=%d CanValidate=%d SkipOptional=%d"),
+		QuestID, CurrentStepID, NextQuestStepID, ValidatorStepID, bCanValidate, bSkipOptionalReward));
 
 	if (bCanValidate)
 	{
@@ -382,13 +425,14 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		// For Branch/Parallel dispatch nodes, ItemTurnInDialog is defined on the destination
 		// step (NextStep), not on the dispatch node itself (CurrentStep).  For all other step
 		// types the dialog lives on the step being completed (CurrentStep).
-		const FText ProgressDialog = bCurrentIsMultiPath
+		const FText ProgressDialog = (bCurrentIsMultiPath || bSkipOptionalReward)
 			? NextStep.ItemTurnInDialog
-			: QuestBearerInterface->GetKnownQuest(CurrentQuest.QuestID).CurrentStep.ItemTurnInDialog;
+			: CurrentQuestProgress->CurrentStep.ItemTurnInDialog;
 
 		// NextStep may be the sentinel when CurrentStepID is the FinishingStep.
 		// ProgressQuest handles this correctly by checking PreviousStep.Last().FinishingStep.
-		QuestBearerInterface->ProgressQuest(CurrentQuest, NextStep);
+		QuestBearerInterface->GetQuestBearerComponent()->ProgressQuest(
+			CurrentQuest, NextStep, /*SkipReward=*/bSkipOptionalReward);
 
 		// Multi-path → FinishingStep auto-completion:
 		// When resolving a Branch/Parallel dispatch, CanValidateStepWithItems already consumed
@@ -396,7 +440,7 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		// step is now CurrentStep but the player has no items left to trigger a second turn-in.
 		// Advance one more time (to sentinel) so the finishing step is archived, its reward is
 		// granted, and the quest becomes Completed — all in the same player action.
-		if (bCurrentIsMultiPath && !IsStepSentinel(NextStep) && NextStep.FinishingStep)
+		if ((bCurrentIsMultiPath || bSkipOptionalReward) && !IsStepSentinel(NextStep) && NextStep.FinishingStep)
 		{
 			// FindNextStep(quest, FinishingStepID) returns GQuestStepSentinel by design
 			// (see the FinishingStep guard in FindNextStep above).

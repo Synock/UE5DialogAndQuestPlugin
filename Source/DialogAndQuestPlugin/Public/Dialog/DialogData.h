@@ -34,7 +34,7 @@ class UDialogConsequenceAction;
  * | Field               | Purpose                                                       |
  * |---------------------|---------------------------------------------------------------|
  * | QuestId             | Quest to check. 0 = no quest filter.                          |
- * | RequiredQuestState  | Show only when quest is in this state. Unknown = no filter.   |
+ * | RequiredQuestState  | Required quest lifecycle state. Unknown = no state filter.    |
  * | bUseStepFilter      | Enables step-based filtering, including exact step 0.          |
  * | MinimumStepID       | Step-based filter. 0 = no step filter unless bUseStepFilter.   |
  * | StepCondition       | Comparison operator for step check (Equal, Greater, etc.).    |
@@ -45,6 +45,10 @@ class UDialogConsequenceAction;
  *
  * State and step filters can be combined: if RequiredQuestState is set and either
  * bUseStepFilter or MinimumStepID is set, the topic only appears when BOTH conditions are satisfied.
+ * As a historical-progress convenience, Accepted combined with Greater or GreaterEqual also
+ * accepts Achieved and Completed quests. Achieved still compares its current step; Completed
+ * counts as past the threshold because completion replaces the live step with a sentinel.
+ * Botched quests and all other comparisons remain exact.
  *
  * ### Example: Multi-Step Quest Dialog
  *
@@ -109,6 +113,8 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	EQuestStepConditionType StepCondition = EQuestStepConditionType::Equal;
 
 	/// If set, topic only shows when the player's quest is in this state.
+	/// Accepted with a Greater/GreaterEqual step filter also includes Achieved and Completed;
+	/// Completed is considered past the requested step because it no longer has a live step.
 	/// Unknown = no state filter (fall back to step-based check).
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
 	EQuestState RequiredQuestState = EQuestState::Unknown;

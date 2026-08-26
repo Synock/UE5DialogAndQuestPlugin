@@ -551,7 +551,7 @@ Control when a topic is visible to the player:
 |-------|--------|
 | `MinimumRelation` | Minimum faction relation value |
 | `QuestId` + `MinimumStepID` + `StepCondition` | Legacy step-based quest condition |
-| `RequiredQuestState` | Topic shows only when quest is in this state |
+| `RequiredQuestState` | Topic shows only when quest is in this state. `Accepted` with a `Greater`/`GreaterEqual` step filter also matches quests in `Achieved` or `Completed`; completed quests count as past the threshold because they no longer have a live step. `Botched` remains excluded. |
 | `RequiredItems` | Player must carry these item IDs |
 | `SkillCheckTag` + `MinimumSkillValue` | Skill check via `IDialogSkillCheckInterface` |
 | `bConsumeOnUse` | Topic disappears after first click |
@@ -870,4 +870,3 @@ If upgrading from the pre-2.0 DataTable-only version:
 5. **IsValid() semantics**: No longer compares greeting strings against `"Error"`. Uses an internal `bDialogInitialized` flag. Behavior is the same from the caller's perspective — no code changes needed.
 
 6. **New optional features**: Consequences, skill checks, voiceover, and assets are all additive. Existing DataTable-based setups continue to work without modification.
-
