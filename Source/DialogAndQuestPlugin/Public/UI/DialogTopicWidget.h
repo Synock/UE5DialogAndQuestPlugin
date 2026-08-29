@@ -31,4 +31,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Dialog")
 	void UpdateTopicData();
+
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
+	int32 GetVisibleTopicCountForTests() const { return TopicListView ? TopicListView->GetNumItems() : 0; }
+	void SetConditionControllerForTests(APlayerController* Controller) { ConditionControllerForTests = Controller; }
+
+private:
+	TWeakObjectPtr<APlayerController> ConditionControllerForTests;
+#endif
 };

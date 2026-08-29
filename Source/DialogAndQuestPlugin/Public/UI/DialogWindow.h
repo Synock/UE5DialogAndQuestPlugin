@@ -50,6 +50,7 @@ protected:
 #if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	int32 CloseWindowBroadcastCountForTests = 0;
 	int32 MainDialogDisplayCountForTests = 0;
+	int32 RefreshDialogOptionsCountForTests = 0;
 #endif
 
 	// Widget bindings ------------------------------------------------------------
@@ -175,5 +176,6 @@ public:
 #if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
 	int32 GetCloseWindowBroadcastCountForTests() const { return CloseWindowBroadcastCountForTests; }
 	int32 GetMainDialogDisplayCountForTests() const { return MainDialogDisplayCountForTests; }
+	int32 GetRefreshDialogOptionsCountForTests() const { return RefreshDialogOptionsCountForTests; }
 #endif
 };

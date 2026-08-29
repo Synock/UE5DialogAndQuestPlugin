@@ -39,5 +39,20 @@ public:
 	{
 		return RequiredItems.IsEmpty(); // Default: no items required = pass
 	}
-};
 
+	/// Check whether the actor effectively owns any item in the supplied list.
+	/// This is used by AbsentItems guards, whose semantics differ from RequiredItems:
+	/// finding any excluded item must fail the condition. Games may include protected
+	/// pending grants here so a recovery topic cannot duplicate an item awaiting delivery.
+	/// The default implementation remains backwards-compatible by checking each item
+	/// individually through HasRequiredItems().
+	virtual bool HasAnyOwnedItems(const TArray<int32>& ItemIDs, const AActor* CheckingActor) const
+	{
+		for (const int32 ItemID : ItemIDs)
+		{
+			if (HasRequiredItems({ItemID}, CheckingActor))
+				return true;
+		}
+		return false;
+	}
+};

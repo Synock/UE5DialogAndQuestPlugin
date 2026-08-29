@@ -195,6 +195,9 @@ void UDialogWindow::CloseWindow_Implementation()
 
 void UDialogWindow::RefreshDialogOptions_Implementation()
 {
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
+	++RefreshDialogOptionsCountForTests;
+#endif
 	TopicList->UpdateTopicData();
 	TopicText->ReprocessTopicLinks();
 }

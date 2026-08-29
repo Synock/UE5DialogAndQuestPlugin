@@ -37,10 +37,15 @@ void UDialogTopicWidget::UpdateTopicData()
 		return;
 
 	AActor* DialogActor = IDialogWindowInterface::Execute_GetDialogActor(ParentDialogObject.Get());
+	APlayerController* ConditionController = GetOwningPlayer();
+#if WITH_AUTOMATION_WORKER || (WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS)
+	if (!ConditionController)
+		ConditionController = ConditionControllerForTests.Get();
+#endif
 
 	for (const auto& Topic : DialogComponent->GetAllDialogTopic())
 	{
-		if (Topic.TopicCondition.VerifyCondition(DialogActor, GetOwningPlayer()))
+		if (Topic.TopicCondition.VerifyCondition(DialogActor, ConditionController))
 		{
 			FDialogTextData TextData;
 			TextData.Id        = Topic.Id;

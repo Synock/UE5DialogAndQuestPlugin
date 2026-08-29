@@ -54,14 +54,13 @@ bool FDialogTopicCondition::VerifyCondition(const AActor* DialogActor, const APl
 		}
 	}
 
-	// Absent items check — topic only shows when the player does NOT possess these items.
-	// Relies on the same HasRequiredItems path (which covers inventory + bank).
+	// Absent items check — topic only shows when the player does NOT effectively own
+	// any excluded item. Games may also treat protected pending grants as owned here.
 	if (!AbsentItems.IsEmpty())
 	{
 		if (const IDialogSkillCheckInterface* SkillCheck = Cast<IDialogSkillCheckInterface>(Controller))
 		{
-			// If the player HAS any of the absent items, hide this topic.
-			if (SkillCheck->HasRequiredItems(AbsentItems, Controller->GetPawn()))
+			if (SkillCheck->HasAnyOwnedItems(AbsentItems, Controller->GetPawn()))
 				return false;
 		}
 		else
