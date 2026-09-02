@@ -280,6 +280,14 @@ void UQuestMainComponent::ForceAddPlayerQuest(APlayerController* PlayerControlle
 
 //----------------------------------------------------------------------------------------------------------------------
 
+const FQuestStep& UQuestMainComponent::SelectTurnInPresentationStep(const FQuestStep& CurrentStep,
+	const FQuestStep& NextStep, const bool bCurrentIsMultiPath, const bool bSkipOptionalReward)
+{
+	return (bCurrentIsMultiPath || bSkipOptionalReward) ? NextStep : CurrentStep;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* QuestBearer, AActor* Validator)
 {
 	IQuestBearerInterface* QuestBearerInterface = Cast<IQuestBearerInterface>(QuestBearer);
@@ -425,9 +433,14 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		// For Branch/Parallel dispatch nodes, ItemTurnInDialog is defined on the destination
 		// step (NextStep), not on the dispatch node itself (CurrentStep).  For all other step
 		// types the dialog lives on the step being completed (CurrentStep).
-		const FText ProgressDialog = (bCurrentIsMultiPath || bSkipOptionalReward)
-			? NextStep.ItemTurnInDialog
-			: CurrentQuestProgress->CurrentStep.ItemTurnInDialog;
+		const FQuestStep& PresentationStep = SelectTurnInPresentationStep(
+			CurrentQuestProgress->CurrentStep, NextStep, bCurrentIsMultiPath, bSkipOptionalReward);
+		const FText ProgressDialog = PresentationStep.ItemTurnInDialog;
+		const FString VoiceoverPath = PresentationStep.VoiceoverCue.IsNull()
+			? FString()
+			: PresentationStep.VoiceoverCue.ToSoftObjectPath().ToString();
+		const FName VoiceoverEventName = PresentationStep.VoiceoverEventName;
+		const float VoiceoverDuration = PresentationStep.VoiceoverDuration;
 
 		// NextStep may be the sentinel when CurrentStepID is the FinishingStep.
 		// ProgressQuest handles this correctly by checking PreviousStep.Last().FinishingStep.
@@ -454,7 +467,10 @@ bool UQuestMainComponent::TryProgressQuest(int64 QuestID, APlayerController* Que
 		if (!ProgressDialog.IsEmpty())
 		{
 			if (IDialogDisplayInterface* DialogInterface = Cast<IDialogDisplayInterface>(QuestBearer))
-				DialogInterface->ForceDisplayTextInDialog(ProgressDialog.ToString());
+			{
+				DialogInterface->ForceDisplayVoicedTextInDialog(ProgressDialog.ToString(), VoiceoverPath,
+					VoiceoverEventName, VoiceoverDuration);
+			}
 		}
 
 		return true;

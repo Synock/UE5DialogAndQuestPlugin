@@ -35,6 +35,8 @@ protected:
 	TMap<int64, FQuestMetaData> QuestList;
 
 	uint32 FindNextStepID(const FQuestMetaData& QuestData, int32 CurrentStep);
+	static const FQuestStep& SelectTurnInPresentationStep(const FQuestStep& CurrentStep,
+		const FQuestStep& NextStep, bool bCurrentIsMultiPath, bool bSkipOptionalReward);
 public:
 
 	/// Returns the step to advance to after CurrentStep.
@@ -84,4 +86,12 @@ public:
 	/// Never pass a sentinel to ProgressQuest().
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Quest")
 	static bool IsStepSentinel(const FQuestStep& Step) { return Step.QuestID == 0 && Step.QuestSubID == 0; }
+
+#if WITH_AUTOMATION_TESTS
+	static const FQuestStep& Test_SelectTurnInPresentationStep(const FQuestStep& CurrentStep,
+		const FQuestStep& NextStep, bool bCurrentIsMultiPath, bool bSkipOptionalReward)
+	{
+		return SelectTurnInPresentationStep(CurrentStep, NextStep, bCurrentIsMultiPath, bSkipOptionalReward);
+	}
+#endif
 };

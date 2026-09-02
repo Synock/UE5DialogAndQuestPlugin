@@ -213,7 +213,6 @@ void UDialogWindow::DisplayDialogTopic_Implementation(int64 ID)
 	const FDialogTopicStruct Topic = *TopicPtr;
 	TopicPtr = nullptr;
 
-	DialogComponent->OnVoiceoverStop.Broadcast();
 	TopicText->AddTopicText(ID);
 
 	if (Topic.Consequence.HasConsequence())
@@ -225,23 +224,7 @@ void UDialogWindow::DisplayDialogTopic_Implementation(int64 ID)
 	if (Topic.TopicCondition.bConsumeOnUse)
 		DialogComponent->ConsumeTopicByID(ID);
 
-	if (!Topic.VoiceoverCue.IsNull())
-	{
-		TWeakObjectPtr<UDialogComponent> WeakComp(DialogComponent.Get());
-		const float Dur = Topic.VoiceoverDuration;
-		UAssetManager::GetStreamableManager().RequestAsyncLoad(
-			Topic.VoiceoverCue.ToSoftObjectPath(),
-			FStreamableDelegate::CreateWeakLambda(this,
-				[WeakComp, SoftCue = Topic.VoiceoverCue, Dur]()
-				{
-					if (UDialogComponent* DC = WeakComp.Get())
-						if (USoundBase* Sound = SoftCue.Get())
-							DC->OnVoiceoverRequested.Broadcast(Sound, Dur);
-				})
-		);
-	}
-	if (!Topic.VoiceoverEventName.IsNone())
-		DialogComponent->OnMiddlewareVoiceoverRequested.Broadcast(Topic.VoiceoverEventName);
+	DialogComponent->RequestVoiceover(Topic.VoiceoverCue, Topic.VoiceoverEventName, Topic.VoiceoverDuration);
 
 
 	RefreshDialogOptions_Implementation();

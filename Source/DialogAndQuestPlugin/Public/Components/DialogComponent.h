@@ -171,6 +171,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnMiddlewareVoiceoverRequested OnMiddlewareVoiceoverRequested;
 
+	/** Stop the current line, then request an authored cue and/or middleware event. */
+	void RequestVoiceover(const TSoftObjectPtr<USoundBase>& VoiceoverCue,
+		FName VoiceoverEventName = NAME_None, float VoiceoverDuration = 0.f);
+
 	/// Mark a topic as consumed (for bConsumeOnUse topics).
 	UFUNCTION(BlueprintCallable)
 	void ConsumeTopicByID(int64 TopicID);

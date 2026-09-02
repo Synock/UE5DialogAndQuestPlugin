@@ -1,9 +1,11 @@
 #include "Components/DialogComponent.h"
+#include "Engine/AssetManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "Interfaces/DialogGameModeInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DialogAndQuestPluginHelper.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
 
 
 // Sets default values for this component's properties
@@ -18,6 +20,37 @@ UDialogComponent::UDialogComponent()
 void UDialogComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void UDialogComponent::RequestVoiceover(const TSoftObjectPtr<USoundBase>& VoiceoverCue,
+	const FName VoiceoverEventName, const float VoiceoverDuration)
+{
+	OnVoiceoverStop.Broadcast();
+
+	if (USoundBase* LoadedSound = VoiceoverCue.Get())
+	{
+		OnVoiceoverRequested.Broadcast(LoadedSound, VoiceoverDuration);
+	}
+	else if (!VoiceoverCue.IsNull())
+	{
+		TWeakObjectPtr<UDialogComponent> WeakThis(this);
+		UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			VoiceoverCue.ToSoftObjectPath(),
+			FStreamableDelegate::CreateWeakLambda(this,
+				[WeakThis, SoftCue = VoiceoverCue, VoiceoverDuration]()
+				{
+					if (UDialogComponent* Dialog = WeakThis.Get())
+					{
+						if (USoundBase* Sound = SoftCue.Get())
+							Dialog->OnVoiceoverRequested.Broadcast(Sound, VoiceoverDuration);
+					}
+				}));
+	}
+
+	if (!VoiceoverEventName.IsNone())
+		OnMiddlewareVoiceoverRequested.Broadcast(VoiceoverEventName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

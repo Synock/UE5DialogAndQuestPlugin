@@ -2,10 +2,8 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Components/DialogComponent.h"
-#include "Engine/AssetManager.h"
 #include "Interfaces/DialogConsequenceInterface.h"
 #include "Interfaces/DialogDisplayInterface.h"
-#include "Sound/SoundBase.h"
 
 // ---- InitDialogWindow -------------------------------------------------------
 
@@ -73,9 +71,6 @@ void IDialogWindowInterface::DisplayDialogTopic_Implementation(int64 ID)
 	const FDialogTopicStruct Topic = *TopicPtr;
 	TopicPtr = nullptr;
 
-	// Stop any ongoing voiceover.
-	Comp->OnVoiceoverStop.Broadcast();
-
 	// Build the display struct with processed hyperlinks.
 	APlayerController* PC = Widget->GetOwningPlayer();
 	FDialogTextData TextData;
@@ -99,23 +94,7 @@ void IDialogWindowInterface::DisplayDialogTopic_Implementation(int64 ID)
 	if (Topic.TopicCondition.bConsumeOnUse)
 		Comp->ConsumeTopicByID(ID);
 
-	// Voiceover — async load to avoid a game-thread hitch.
-	if (!Topic.VoiceoverCue.IsNull())
-	{
-		TWeakObjectPtr<UDialogComponent> WeakComp(Comp);
-		UAssetManager::GetStreamableManager().RequestAsyncLoad(
-			Topic.VoiceoverCue.ToSoftObjectPath(),
-			FStreamableDelegate::CreateWeakLambda(Widget,
-				[WeakComp, SoftVO = Topic.VoiceoverCue, Dur = Topic.VoiceoverDuration]()
-				{
-					if (UDialogComponent* DC = WeakComp.Get())
-						if (USoundBase* Sound = SoftVO.Get())
-							DC->OnVoiceoverRequested.Broadcast(Sound, Dur);
-				})
-		);
-	}
-	if (!Topic.VoiceoverEventName.IsNone())
-		Comp->OnMiddlewareVoiceoverRequested.Broadcast(Topic.VoiceoverEventName);
+	Comp->RequestVoiceover(Topic.VoiceoverCue, Topic.VoiceoverEventName, Topic.VoiceoverDuration);
 
 
 	Execute_RefreshDialogOptions(Self);
@@ -154,4 +133,3 @@ void IDialogWindowInterface::DisplayPlainString_Implementation(const FString& Pl
 	TextData.TopicText = Processed;
 	Execute_OnTopicTextReady(Self, TextData);
 }
-

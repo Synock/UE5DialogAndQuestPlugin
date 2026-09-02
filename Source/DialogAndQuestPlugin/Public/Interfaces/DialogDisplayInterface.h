@@ -35,6 +35,15 @@ public:
 	UFUNCTION(Client, Unreliable)
 	virtual void ForceDisplayTextInDialog(const FString& TextString) = 0;
 
+	/**
+	 * Display transient dialog text together with its authored voiceover metadata.
+	 * The soft-object path is transported as a string because soft pointers are not
+	 * reliable RPC payloads in the dialog replication path.
+	 */
+	UFUNCTION(Client, Unreliable)
+	virtual void ForceDisplayVoicedTextInDialog(const FString& TextString, const FString& VoiceoverPath,
+		FName VoiceoverEventName, float VoiceoverDuration) = 0;
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void CreateDialogWindow(UDialogComponent* DialogComponent, AActor* DialogActor);
 
