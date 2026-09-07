@@ -113,8 +113,9 @@ struct DIALOGANDQUESTPLUGIN_API FDialogTopicCondition  : public FTableRowBase
 	EQuestStepConditionType StepCondition = EQuestStepConditionType::Equal;
 
 	/// If set, topic only shows when the player's quest is in this state.
-	/// Accepted with a Greater/GreaterEqual step filter also includes Achieved and Completed;
-	/// Completed is considered past the requested step because it no longer has a live step.
+	/// Accepted with a Greater/GreaterEqual step filter also includes Achieved and Completed.
+	/// Any successfully Completed quest satisfies Greater/GreaterEqual step filters, but never
+	/// Equal/Lesser/LesserEqual, because completion no longer has a live step.
 	/// Unknown = no state filter (fall back to step-based check).
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Condition|Quest")
 	EQuestState RequiredQuestState = EQuestState::Unknown;
