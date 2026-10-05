@@ -424,7 +424,36 @@ bool UQuestBearerComponent::ApplyQuestDataFromMeta(const FQuestMetaData& QuestMe
 	else
 	{
 		TArray<FQuestStep> Path;
-		if (StepID == 0)
+		bool bRestoredTerminalPath = false;
+		if (StepID != 0 && NewState == EQuestState::Completed)
+		{
+			// The save stores the finishing objective rather than the in-memory
+			// sentinel (0), so a linear completed path can be reconstructed exactly.
+			bool bSavedFinishingStep = false;
+			for (const FQuestStep& Step : QuestMeta.Steps)
+				if (Step.QuestSubID == StepID && Step.FinishingStep) bSavedFinishingStep = true;
+			if (bSavedFinishingStep &&
+				MainQuestComponent->TryBuildPathToStep(QuestMeta, StepID, Path) &&
+				Path.Num() == QuestMeta.Steps.Num())
+			{
+				bRestoredTerminalPath = true;
+				for (const FQuestStep& Step : Path)
+					if (Step.StepType != EQuestStepType::Linear) bRestoredTerminalPath = false;
+			}
+			if (!bRestoredTerminalPath) Path.Reset();
+		}
+		if (bRestoredTerminalPath)
+		{
+			for (const FQuestStep& Step : Path)
+			{
+				FQuestProgressStep CompletedStep(Step);
+				CompletedStep.Completed = true;
+				NewData.PreviousStep.Add(MoveTemp(CompletedStep));
+			}
+			NewData.ProgressID = 0;
+			NewData.CurrentStep.Completed = true;
+		}
+		else if (StepID == 0)
 		{
 			if (QuestMeta.Steps.IsEmpty())
 				return false;
@@ -435,17 +464,20 @@ bool UQuestBearerComponent::ApplyQuestDataFromMeta(const FQuestMetaData& QuestMe
 			return false;
 		}
 
-		for (int32 i = 0; i + 1 < Path.Num(); ++i)
+		if (!bRestoredTerminalPath)
 		{
-			FQuestProgressStep CompletedStep(Path[i]);
-			CompletedStep.Completed = true;
-			NewData.PreviousStep.Add(MoveTemp(CompletedStep));
-		}
+			for (int32 i = 0; i + 1 < Path.Num(); ++i)
+			{
+				FQuestProgressStep CompletedStep(Path[i]);
+				CompletedStep.Completed = true;
+				NewData.PreviousStep.Add(MoveTemp(CompletedStep));
+			}
 
-		NewData.ProgressID = StepID;
-		NewData.CurrentStep = FQuestProgressStep(Path.Last());
-		NewData.CurrentStep.Completed = (NewState == EQuestState::Completed);
-		PopulateBranchAlternatives(NewData, QuestMeta);
+			NewData.ProgressID = StepID;
+			NewData.CurrentStep = FQuestProgressStep(Path.Last());
+			NewData.CurrentStep.Completed = (NewState == EQuestState::Completed);
+			PopulateBranchAlternatives(NewData, QuestMeta);
+		}
 	}
 
 	KnownQuestData.RemoveAll([QuestID = QuestMeta.QuestID](const FQuestProgressData& Data)
@@ -803,6 +835,13 @@ void UQuestBearerComponent::AuthoritySetupQuestData(int64 QuestID, int32 StepID,
 
 	const FQuestMetaData& Meta = MQC->GetQuestData(QuestID);
 	if (Meta.QuestID == 0)
+		return;
+
+	// A completed save records the finishing objective. Reconstruct its
+	// terminal history before the replay loop, which otherwise stops on that
+	// objective without archiving it.
+	if (InitialState == EQuestState::Completed && StepID != 0 &&
+		ApplyQuestDataFromMeta(Meta, MQC, StepID, InitialState, true))
 		return;
 
 	// Handle Mentioned state — just create a mention entry, don't set up steps
