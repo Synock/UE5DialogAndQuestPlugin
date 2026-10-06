@@ -18,23 +18,26 @@ void IDialogWindowInterface::InitDialogWindow_Implementation(UDialogComponent* I
 
 void IDialogWindowInterface::CloseWindow_Implementation()
 {
+	UObject* Self = Cast<UObject>(this);
+	if (!Self)
+		return;
 	// Stop any ongoing voiceover.
-	if (UDialogComponent* Comp = Execute_GetDialogComponent(_getUObject()))
+	if (UDialogComponent* Comp = Execute_GetDialogComponent(Self))
 		Comp->OnVoiceoverStop.Broadcast();
 
-	Execute_OnDialogClosed(_getUObject());
+	Execute_OnDialogClosed(Self);
 }
 
 // ---- RefreshDialogOptions ---------------------------------------------------
 
 void IDialogWindowInterface::RefreshDialogOptions_Implementation()
 {
-	UUserWidget* Widget = Cast<UUserWidget>(_getUObject());
+	UUserWidget* Widget = Cast<UUserWidget>(this);
 	if (!Widget)
 		return;
 
-	UDialogComponent* Comp = Execute_GetDialogComponent(_getUObject());
-	AActor* Actor           = Execute_GetDialogActor(_getUObject());
+	UDialogComponent* Comp = Execute_GetDialogComponent(Widget);
+	AActor* Actor           = Execute_GetDialogActor(Widget);
 	APlayerController* PC   = Widget->GetOwningPlayer();
 	if (!Comp || !PC)
 		return;
@@ -46,14 +49,14 @@ void IDialogWindowInterface::RefreshDialogOptions_Implementation()
 			Visible.Add(Topic);
 	}
 
-	Execute_OnTopicListUpdated(_getUObject(), Visible);
+	Execute_OnTopicListUpdated(Widget, Visible);
 }
 
 // ---- DisplayDialogTopic -----------------------------------------------------
 
 void IDialogWindowInterface::DisplayDialogTopic_Implementation(int64 ID)
 {
-	UObject* Self         = _getUObject();
+	UObject* Self         = Cast<UObject>(this);
 	UUserWidget* Widget   = Cast<UUserWidget>(Self);
 	if (!Widget)
 		return;
@@ -104,7 +107,9 @@ void IDialogWindowInterface::DisplayDialogTopic_Implementation(int64 ID)
 
 void IDialogWindowInterface::DisplayDialogTopicFromString_Implementation(const FString& ID)
 {
-	UObject* Self = _getUObject();
+	UObject* Self = Cast<UObject>(this);
+	if (!Self)
+		return;
 	if (UDialogComponent* Comp = Execute_GetDialogComponent(Self))
 		Execute_DisplayDialogTopic(Self, Comp->GetDialogTopicID(ID));
 }
@@ -113,7 +118,7 @@ void IDialogWindowInterface::DisplayDialogTopicFromString_Implementation(const F
 
 void IDialogWindowInterface::DisplayPlainString_Implementation(const FString& PlainString)
 {
-	UObject* Self       = _getUObject();
+	UObject* Self       = Cast<UObject>(this);
 	UUserWidget* Widget = Cast<UUserWidget>(Self);
 	if (!Widget)
 		return;
